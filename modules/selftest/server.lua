@@ -486,6 +486,26 @@ local function TierA()
         return (name == false or type(name) == 'string') and FN_BRIDGE.DISPATCH.Send(65000, {}) == false, tostring(name)
     end)
 
+    Check('PHONE without a player', function()
+        local P = FN_BRIDGE.PHONE
+        local name = P.Name()
+
+        return (name == false or type(name) == 'string') and P.Notify(65000, { title = 'x' }) == false and P.Mail(65000, { subject = 'x', message = 'x' }) == false
+            and P.Message('5550100', 65000, 'x') == false and P.Number(65000) == false and P.Notify(1, {}) == false and P.Mail('fnb_nobody', {}) == false, tostring(name)
+    end)
+
+    Check('PHONE.Mail to an offline character', function()
+        local P = FN_BRIDGE.PHONE
+        if P.Name() ~= 'qb-phone' then return 'skip', 'only checked live with qb-phone' end
+        local cid = 'FNBPHONE1'
+        local sent = P.Mail(cid, { sender = 'fn_bridge', subject = 'fnb selftest', message = 'probe' })
+        Wait(300)
+        local n = MySQL.scalar.await('SELECT COUNT(*) FROM player_mails WHERE citizenid = ? AND subject = ?', { cid, 'fnb selftest' }) or 0
+        MySQL.query.await('DELETE FROM player_mails WHERE citizenid = ?', { cid })
+
+        return sent == 'qb-phone' and n == 1, ('%s, %d row'):format(tostring(sent), n)
+    end)
+
     Check('DEATH without a player', function()
         local D = FN_BRIDGE.DEATH
         local reviver = D.Reviver()

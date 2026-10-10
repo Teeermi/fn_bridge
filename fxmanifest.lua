@@ -2,9 +2,9 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-version '1.0.0'
+version '1.0.1'
 author 'fivenuts.dev | https://fivenuts.dev'
-description 'fn_bridge - Bridge for op scripts'
+description 'fn_bridge - Bridge for fivenuts scripts'
 
 dependencies {
     'ox_lib',
@@ -27,6 +27,7 @@ client_scripts {
     'modules/notify/client.lua',
     'modules/death/client.lua',
     'modules/dispatch/client.lua',
+    'modules/phone/client.lua',
     'modules/setup/client.lua',
     'modules/picker/client.lua',
     'modules/keys/client.lua',
@@ -69,6 +70,7 @@ server_scripts {
     'modules/helper/server.lua',
     'modules/notify/server.lua',
     'modules/dispatch/server.lua',
+    'modules/phone/server.lua',
     'modules/death/server.lua',
     'modules/media/server.lua',
     'modules/housing/server.lua',

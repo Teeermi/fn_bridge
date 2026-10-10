@@ -160,7 +160,7 @@ You get copies, so changing them changes nothing. `GetJobPlayers` lists everyone
 On big servers, name searches get faster with this index (ESX):
 
 ```sql
-ALTER TABLE users ADD INDEX idx_op_name (firstname, lastname);
+ALTER TABLE users ADD INDEX idx_users_name (firstname, lastname);
 ```
 
 ## FN_BRIDGE.VEHICLES (server)
@@ -537,6 +537,39 @@ Picks the first one running: fn_phone (its service apps get a report and it forw
 local via = FN_BRIDGE.DISPATCH.Send(source, { code = '10-52', title = 'Person down', jobs = { 'ambulance' }, priority = 1 })
 if not via then
     -- notify on-duty medics yourself
+end
+```
+
+## FN_BRIDGE.PHONE (server)
+
+Added in 1.0.1. Sends things to the player's phone, whatever phone the server runs.
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Name` | none | the phone resource in use, or `false` |
+| `Supports` | `'notify'`, `'mail'`, `'message'` or `'number'` | boolean for the phone in use |
+| `Number` | `playerId` | the phone number as text (from the phone, else the framework), or `false` |
+| `Notify` | `playerId`, `{ title, body, app, icon, color }` | the phone resource that showed it, or `false` |
+| `Mail` | `playerId` or a character identifier, `{ sender, subject, message }` | the phone resource that got it, or `false` |
+| `Message` | `fromNumber`, `playerId` or a number, `text` | the phone resource that sent it, or `false` |
+
+Picks the first one running: fn_phone, lb-phone, npwd, qb-phone. `setr fn_bridge:phone` forces one, or `none`.
+`title` is required for `Notify`, `subject` and `message` for `Mail`. `app` is an app id of that phone (fn_phone,
+lb-phone), `icon` a Font Awesome class and `color` a hex colour (qb-phone). A character identifier reaches players
+who are offline (the citizenid on QBCore and Qbox, the identifier on ESX).
+
+| | Notify | Mail | Message |
+| --- | --- | --- | --- |
+| fn_phone | yes | yes, offline too | yes |
+| lb-phone | yes | yes, offline too | yes |
+| npwd | yes | no | yes |
+| qb-phone | yes | yes, offline too | no |
+
+When a function returns `false`, the player did not get it on a phone, so show it your own way:
+
+```lua
+if not FN_BRIDGE.PHONE.Notify(source, { title = 'Store', body = 'Your order has arrived' }) then
+    FN_BRIDGE.NOTIFY.Notify(source, 'Your order has arrived', 'success')
 end
 ```
 

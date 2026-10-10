@@ -18,6 +18,7 @@ Config = {
     FrameworkUniqueId = Convar('charid', nil),
     Postal = Convar('postal', 'nearest-postal'),
     Dispatch = Convar('dispatch', 'auto'),
+    Phone = Convar('phone', 'auto'),
     AdminGroups = { 'admin', 'superadmin' },
     Counter = {
         dutyAware = false,

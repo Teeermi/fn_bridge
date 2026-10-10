@@ -81,6 +81,7 @@ setr fn_bridge:notify "ox"
 | `fn_bridge:charid` | identifier | short character id: a players column or `column.jsonKey`, e.g. `charinfo.stateid` |
 | `fn_bridge:setup` | `setup` | name of the staff coordinate command, `off` removes it |
 | `fn_bridge:dispatch` | `auto` | the resource that gets emergency alerts, `none` for no alerts |
+| `fn_bridge:phone` | `auto` | the phone that gets notifications, mail and texts from scripts, `none` for none |
 | `fn_bridge:debug` | `false` | `true` prints every detection step and draws target zones |
 
 ### `fn_bridge_custom`
@@ -151,6 +152,7 @@ doesn't cover go through the script's own hook, e.g. `Config.Inventory = 'custom
 | Door locks | ox_doorlock, qb-doorlock, your function |
 | Clothing | illenium-appearance, fivem-appearance, qb-clothing, esx_skin, your function |
 | Radio | pma-voice, SaltyChat |
+| Phone | fn_phone, lb-phone, npwd, qb-phone |
 | Cuffs and escort | qb-policejob, qbx_police, esx_policejob, your function |
 | Multijob | Qbox, ps-multijob, your function |
 

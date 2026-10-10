@@ -21,7 +21,7 @@ local function ReportMissingFramework()
         return
     end
 
-    print('^1the '..FN_BRIDGE.frameworkName..' adapter never finished loading^7 - fn_bridge is running without a framework and every op script will fail to start.')
+    print('^1the '..FN_BRIDGE.frameworkName..' adapter never finished loading^7 - fn_bridge is running without a framework and every fivenuts script will fail to start.')
 end
 
 local function ResolveInventory()
@@ -78,6 +78,7 @@ Finish = function()
     FN_BRIDGE.SOCIETY = FN_BRIDGE.UnavailableNamespace('SOCIETY', 'server side only', FN_BRIDGE.SocietyContract)
     FN_BRIDGE.VEHICLES = FN_BRIDGE.UnavailableNamespace('VEHICLES', 'server side only', FN_BRIDGE.VehiclesContract)
     FN_BRIDGE.DISPATCH = FN_BRIDGE.UnavailableNamespace('DISPATCH', 'server side only', { 'Name', 'Send' })
+    FN_BRIDGE.PHONE = FN_BRIDGE.UnavailableNamespace('PHONE', 'server side only', { 'Name', 'Supports', 'Number', 'Notify', 'Mail', 'Message' })
     FN_BRIDGE.MEDIA = FN_BRIDGE.UnavailableNamespace('MEDIA', 'server side only', { 'IsUrl', 'Capturer', 'Provider', 'Missing', 'Ready', 'Capture', 'Upload', 'Shot', 'Delete', 'Ticket' })
     FN_BRIDGE.KEYS = FN_KEYS
     FN_BRIDGE.DEATH = FN_DEATH

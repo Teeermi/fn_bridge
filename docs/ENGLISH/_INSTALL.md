@@ -30,7 +30,7 @@ ensure ox_target          # your target
 
 ensure fn_bridge
 
-ensure op_multijobs       # FIVENUTS scripts go after the bridge
+ensure fn_phone          # FIVENUTS scripts go after the bridge
 ```
 
 ## 4. Check it worked
@@ -77,6 +77,7 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:setup` | `setup` | Name of the staff coordinate command, `off` removes it |
 | `fn_bridge:postal` | `nearest-postal` | Resource with your postal codes map |
 | `fn_bridge:dispatch` | `auto` | Which resource gets emergency alerts, `none` turns them off |
+| `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts, `none` turns them off |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
 
 ox_lib is never picked automatically for notifications or text UI, because it's always running and nothing else would ever get chosen. Set it by hand if you want it:

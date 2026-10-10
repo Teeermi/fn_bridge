@@ -21,7 +21,7 @@ local function ReportMissingFramework()
         return
     end
 
-    print('^1the '..FN_BRIDGE.frameworkName..' adapter never finished loading^7 - fn_bridge is running without a framework and every op script will fail to start.')
+    print('^1the '..FN_BRIDGE.frameworkName..' adapter never finished loading^7 - fn_bridge is running without a framework and every fivenuts script will fail to start.')
 end
 
 local function Resolve(namespace, target, contract, adapterName)
@@ -71,6 +71,7 @@ Finish = function()
     FN_BRIDGE.KEYS = FN_KEYS
     FN_BRIDGE.CHARACTERS = Resolve('CHARACTERS', FN_CHARACTERS, FN_BRIDGE.CharactersContract.server, FN_BRIDGE.frameworkName)
     FN_BRIDGE.DISPATCH = FN_DISPATCH
+    FN_BRIDGE.PHONE = FN_PHONE
     FN_BRIDGE.MEDIA = FN_MEDIA
     FN_BRIDGE.DEATH = FN_DEATH
     FN_BRIDGE.HOUSING = FN_HOUSING
@@ -86,7 +87,7 @@ Finish = function()
     FN_BRIDGE.PREFS = FN_BRIDGE.UnavailableNamespace('PREFS', 'client side only', { 'Keys', 'Get', 'All', 'Set' })
     FN_BRIDGE.SOCIETY = Resolve('SOCIETY', FN_SOCIETY, FN_BRIDGE.SocietyContract, FN_BRIDGE.societyName or '_default')
 
-    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'MEDIA', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
+    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetName', 'name')
@@ -104,6 +105,7 @@ Finish = function()
             { 'help text', FN_BRIDGE.helpTextName, 'ok' },
             { 'society', FN_BRIDGE.societyName or 'none detected', FN_BRIDGE.societyName and 'ok' or 'fallback' },
             { 'dispatch', FN_DISPATCH.Name() or 'none detected', FN_DISPATCH.Name() and 'ok' or 'fallback' },
+            { 'phone', FN_PHONE.Name() or 'none detected', FN_PHONE.Name() and 'ok' or 'fallback' },
             { 'housing', #FN_HOUSING.Running() > 0 and table.concat(FN_HOUSING.Running(), ', ') or 'none detected', #FN_HOUSING.Running() > 0 and 'ok' or 'fallback' },
             { 'screenshots', FN_MEDIA.Capturer() or 'none detected', FN_MEDIA.Capturer() and 'ok' or 'fallback' },
             { 'vehicles', FN_VEHICLES.Available() and 'ok' or 'no garage table', FN_VEHICLES.Available() and 'ok' or 'fallback' },
