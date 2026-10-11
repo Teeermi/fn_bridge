@@ -660,6 +660,31 @@ if url then
 end
 ```
 
+## FN_BRIDGE.HTTP (server)
+
+For scripts that answer web requests with `SetHttpHandler`. The server owner turns the gate on with
+`set fn_bridge:tunnel` (see [PROTECTION.md](PROTECTION.md)), and every script that asks `Origin` follows it.
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Origin` | `address`, `headers` | the caller's address, or `nil` when `fn_bridge:tunnel` is on and the request did not come through the tunnel or a listed proxy. Behind one it reads the last `X-Forwarded-For` entry, then `CF-Connecting-IP` |
+| `Tunnel` | none | `true` when `fn_bridge:tunnel` is on |
+| `Header` | `headers`, `name` | a header value, ignoring case |
+
+```lua
+SetHttpHandler(function(req, res)
+    local ip = FN_BRIDGE.HTTP.Origin(req.address, req.headers)
+    if not ip then
+        res.writeHead(403)
+        return res.send('')
+    end
+    -- rate limit by ip, answer the request
+end)
+```
+
+Pass `req.address` and `req.headers`, not `req` itself: the request carries functions, and functions are slow to
+send to another resource.
+
 ## Added in 1.9
 
 Everything below came with fn_mdt, fn_business and fn_crime. The same rules hold: nothing throws, missing things come back as `false`, `0` or `{}`, and `FN_BRIDGE.IsSupported(namespace, key)` is `false` where a function is only a stub on this server. Each part says what it reads and which hook replaces it. Hooks are registered with `FN_BRIDGE.Provide(key, value)` (also `exports.fn_bridge:Provide`), a script's own `Config.Bridge[key]` wins over them, and they end when the providing resource stops.

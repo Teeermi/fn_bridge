@@ -35,6 +35,7 @@ You don't have to tell it what you run. It checks once when the server starts.
 - **Installing:** [_INSTALL.md](_INSTALL.md)
 - **Writing your own script:** [DEVELOPERS.md](DEVELOPERS.md)
 - **Every function:** [API.md](API.md)
+- **Tunnel, proxy and DDoS:** [PROTECTION.md](PROTECTION.md)
 
 ## Support
 

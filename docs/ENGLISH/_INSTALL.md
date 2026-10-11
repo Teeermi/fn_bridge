@@ -79,6 +79,7 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:dispatch` | `auto` | Which resource gets emergency alerts, `none` turns them off |
 | `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts, `none` turns them off |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
+| `fn_bridge:tunnel` | `off` | `on` when web pages of fivenuts scripts go through a Cloudflare Tunnel or a proxy on this machine, see [PROTECTION.md](PROTECTION.md) |
 
 ox_lib is never picked automatically for notifications or text UI, because it's always running and nothing else would ever get chosen. Set it by hand if you want it:
 

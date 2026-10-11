@@ -73,6 +73,7 @@ Finish = function()
     FN_BRIDGE.DISPATCH = FN_DISPATCH
     FN_BRIDGE.PHONE = FN_PHONE
     FN_BRIDGE.MEDIA = FN_MEDIA
+    FN_BRIDGE.HTTP = FN_HTTP
     FN_BRIDGE.DEATH = FN_DEATH
     FN_BRIDGE.HOUSING = FN_HOUSING
     FN_BRIDGE.VOICE = FN_VOICE
@@ -87,7 +88,7 @@ Finish = function()
     FN_BRIDGE.PREFS = FN_BRIDGE.UnavailableNamespace('PREFS', 'client side only', { 'Keys', 'Get', 'All', 'Set' })
     FN_BRIDGE.SOCIETY = Resolve('SOCIETY', FN_SOCIETY, FN_BRIDGE.SocietyContract, FN_BRIDGE.societyName or '_default')
 
-    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
+    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'HTTP', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetName', 'name')
@@ -114,6 +115,7 @@ Finish = function()
             { 'doors', FN_DOORS.Name() or 'none detected', FN_DOORS.Name() and 'ok' or 'fallback' },
             { 'clothing', FN_APPEARANCE.Name() or 'none detected', FN_APPEARANCE.Name() and 'ok' or 'fallback' },
             { 'radio', FN_VOICE.Name() or 'none detected', FN_VOICE.Name() and 'ok' or 'fallback' },
+            { 'web', FN_HTTP.Tunnel() and 'tunnel only' or 'direct', 'ok' },
         })
     end)
 

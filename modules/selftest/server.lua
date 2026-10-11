@@ -297,6 +297,21 @@ local function TierA()
     local one, two
 
     Check('framework detected', function() return framework ~= nil, 'none' end)
+    Check('HTTP.Origin', function()
+        local HTTP = FN_BRIDGE.HTTP
+        local cf = { ['Cf-Connecting-Ip'] = '203.0.113.7' }
+        local stranger = HTTP.Origin('198.51.100.4:5000', cf)
+        local tunneled = HTTP.Origin('127.0.0.1:5000', cf)
+        local v6 = HTTP.Origin('[::1]:5000', {})
+        local ok = HTTP.Header({ ['X-Test'] = 'a' }, 'x-test') == 'a' and v6 == '::1'
+        if HTTP.Tunnel() then
+            ok = ok and stranger == nil and tunneled == '203.0.113.7'
+        else
+            ok = ok and stranger == '198.51.100.4' and tunneled == '127.0.0.1'
+        end
+
+        return ok, ('tunnel %s stranger %s tunneled %s v6 %s'):format(HTTP.Tunnel(), tostring(stranger), tostring(tunneled), tostring(v6))
+    end)
 
     Check('framework contract', function()
         local missing = {}

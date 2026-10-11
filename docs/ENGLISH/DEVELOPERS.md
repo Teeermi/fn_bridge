@@ -29,7 +29,7 @@ Add `dependency 'fn_bridge'` so the server starts it first, and say which versio
 
 ```lua
 dependencies { 'ox_lib', 'oxmysql', 'fn_bridge' }
-fn_bridge_version '1.1.0'
+fn_bridge_version '1.2.0'
 ```
 
 An older fn_bridge then prints a clear line in the console instead of failing on a missing function.

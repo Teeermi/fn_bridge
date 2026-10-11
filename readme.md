@@ -83,6 +83,7 @@ setr fn_bridge:notify "ox"
 | `fn_bridge:dispatch` | `auto` | the resource that gets emergency alerts, `none` for no alerts |
 | `fn_bridge:phone` | `auto` | the phone that gets notifications, mail and texts from scripts, `none` for none |
 | `fn_bridge:debug` | `false` | `true` prints every detection step and draws target zones |
+| `fn_bridge:tunnel` | `off` | `on` when the web pages of fivenuts scripts go through a Cloudflare Tunnel; direct requests to the game port then get 403 ([PROTECTION.md](docs/ENGLISH/PROTECTION.md)) |
 
 ### `fn_bridge_custom`
 
@@ -163,7 +164,7 @@ often keep a qb-core compatibility resource.
 
 ```lua
 dependencies { 'ox_lib', 'oxmysql', 'fn_bridge' }
-fn_bridge_version '1.1.0'
+fn_bridge_version '1.2.0'
 
 shared_scripts {
     '@fn_bridge/import.lua',
@@ -180,7 +181,9 @@ change between versions; new versions only add functions.
 
 [DEVELOPERS.md](docs/ENGLISH/DEVELOPERS.md) covers import, translations and a worked example,
 [API.md](docs/ENGLISH/API.md) every function and which framework supports it,
-[_INSTALL.md](docs/ENGLISH/_INSTALL.md) the long install guide. Console: `fnb_doctor` (what was picked and what is missing), `fnb_selftest` (no player needed) or
+[_INSTALL.md](docs/ENGLISH/_INSTALL.md) the long install guide,
+[PROTECTION.md](docs/ENGLISH/PROTECTION.md) a Cloudflare Tunnel for the web pages and what protects the game port.
+Console: `fnb_doctor` (what was picked and what is missing), `fnb_selftest` (no player needed) or
 `fnb_selftest <playerId>`.
 
 ## Troubleshooting

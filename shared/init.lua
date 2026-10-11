@@ -340,6 +340,7 @@ FN_BRIDGE.ServerOnly = {
     BILLING = { 'Name', 'Send', 'List', 'Pay', 'Provide' },
     STAFF = { 'Host', 'Call' },
     DOORS = { 'Name', 'List', 'IsLocked', 'SetLocked', 'Allow' },
+    HTTP = { 'Header', 'Tunnel', 'Origin' },
 }
 
 FN_BRIDGE.PickerContract = { 'Start', 'Await', 'Stop', 'IsActive' }
