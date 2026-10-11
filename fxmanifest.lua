@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-version '1.0.1'
+version '1.1.0'
 author 'fivenuts.dev | https://fivenuts.dev'
 description 'fn_bridge - Bridge for fivenuts scripts'
 
@@ -13,6 +13,7 @@ dependencies {
 
 shared_scripts {
     '@ox_lib/init.lua',
+    'callback.lua',
     'shared/settings.lua',
     'shared/init.lua',
 }
@@ -108,4 +109,5 @@ server_scripts {
 
 files {
     'import.lua',
+    'callback.lua',
 }

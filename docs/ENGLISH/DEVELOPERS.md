@@ -12,6 +12,7 @@ At the top of your manifest:
 shared_scripts {
     '@fn_bridge/import.lua',
     '@ox_lib/init.lua',
+    '@fn_bridge/callback.lua',
     'config.lua',
 }
 ```
@@ -28,10 +29,17 @@ Add `dependency 'fn_bridge'` so the server starts it first, and say which versio
 
 ```lua
 dependencies { 'ox_lib', 'oxmysql', 'fn_bridge' }
-fn_bridge_version '1.0.0'
+fn_bridge_version '1.1.0'
 ```
 
 An older fn_bridge then prints a clear line in the console instead of failing on a missing function.
+
+`@fn_bridge/callback.lua` goes right after `@ox_lib/init.lua`. You keep writing `lib.callback`, `lib.callback.await` and
+`lib.callback.register` as usual, but calls from your client to your own server are sent together, one event per frame.
+Many servers run a modified ox_lib that drops a player's callbacks above a few per second without an answer, and a UI
+that loads ten things at once then hangs until the timeout. With this file it doesn't. Callbacks of other resources
+still go through ox_lib. Server to client callbacks are unchanged. Your server answers at most 120 calls per player
+per second.
 
 ## Settings for your script
 
@@ -143,6 +151,7 @@ lua54 'yes'
 shared_scripts {
     '@fn_bridge/import.lua',
     '@ox_lib/init.lua',
+    '@fn_bridge/callback.lua',
 }
 
 client_script 'client/main.lua'

@@ -163,11 +163,12 @@ often keep a qb-core compatibility resource.
 
 ```lua
 dependencies { 'ox_lib', 'oxmysql', 'fn_bridge' }
-fn_bridge_version '1.0.0'
+fn_bridge_version '1.1.0'
 
 shared_scripts {
     '@fn_bridge/import.lua',
     '@ox_lib/init.lua',
+    '@fn_bridge/callback.lua',
     'config.lua',
 }
 ```
