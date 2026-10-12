@@ -91,7 +91,7 @@ end
 
 local function QbSave(kind, name, data, opts)
     if not Keep(opts) then return end
-    MySQL.query.await('CREATE TABLE IF NOT EXISTS fn_bridge_groups (kind VARCHAR(8) NOT NULL, name VARCHAR(50) NOT NULL, data LONGTEXT NULL, PRIMARY KEY (kind, name)) DEFAULT CHARSET=utf8mb4')
+    MySQL.query.await('CREATE TABLE IF NOT EXISTS fn_bridge_groups (kind VARCHAR(8) NOT NULL, name VARCHAR(50) NOT NULL, data LONGTEXT NULL, PRIMARY KEY (kind, name)) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci')
     MySQL.query.await('INSERT INTO fn_bridge_groups (kind, name, data) VALUES (?, ?, NULLIF(?, \'\')) ON DUPLICATE KEY UPDATE data = VALUES(data)', { kind, name, data and json.encode(data) or '' })
 end
 

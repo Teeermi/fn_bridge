@@ -335,7 +335,7 @@ IMPL.esx = {
     dossier = function(key)
         local d = {}
         if has('owned_vehicles') then
-            d.veh = cars(MySQL.query.await('SELECT plate, vehicle, stored FROM owned_vehicles WHERE owner = ? LIMIT 30', { key }),
+            d.veh = cars(MySQL.query.await('SELECT plate, vehicle, `stored` FROM owned_vehicles WHERE owner = ? LIMIT 30', { key }),
                 function(r)
                     local v = decode(r.vehicle)
                     return v and v.model
@@ -458,7 +458,7 @@ end
 
 local function oxDossier(key)
     local d = {}
-    d.veh = cars(MySQL.query.await('SELECT model, plate, stored FROM vehicles WHERE owner = ? LIMIT 30', { key }),
+    d.veh = cars(MySQL.query.await('SELECT model, plate, `stored` FROM vehicles WHERE owner = ? LIMIT 30', { key }),
         function(r) return r.model end, function(r) return r.stored ~= nil and r.stored ~= 'impound' end)
     d.lic = {}
     for _, r in ipairs(MySQL.query.await('SELECT cl.name, l.label FROM character_licenses cl LEFT JOIN ox_licenses l ON l.name = cl.name WHERE cl.charId = ?', { key }) or {}) do

@@ -229,7 +229,7 @@ local function EnsureStandalone()
             props      LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_op_vehicles_owner (owner)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ]])
 
     if FN_DB.HasTable('cs_vehicles') then
