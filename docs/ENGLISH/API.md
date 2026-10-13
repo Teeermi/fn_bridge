@@ -901,6 +901,7 @@ fn_mdt now comes first in the list, before fn_phone: `exports.fn_mdt:alert(alert
 | `FN_BRIDGE.ProvidersOf(key)` | every registration of `key`, oldest first: `{ { resource, value } }` |
 | `FN_BRIDGE.Provider(key)` | resource that provided `key`, or `nil` |
 | `FN_BRIDGE.Setting(key)` | the calling script's `Config.Bridge[key]`, else the provided hook |
+| `exports.fn_bridge:RestartSelf()` | server, 1.2.2: restarts the calling resource half a second later from fn_bridge's side and returns `true`. A resource that restarts itself with `ExecuteCommand` takes FXServer down; this is the safe way. Only the caller can be restarted, once at a time |
 
 All namespaces exist on both sides. One with nothing behind it (like `TARGET` on the server) logs and returns `false`, so you never need a nil check. Load the bridge with `@fn_bridge/import.lua`, see [DEVELOPERS.md](DEVELOPERS.md).
 

@@ -134,3 +134,19 @@ local function FrameworkLoadedModule()
 end
 
 CreateThread(FrameworkLoadedModule)
+
+local restarting = {}
+
+exports('RestartSelf', function()
+    local res = GetInvokingResource()
+    if not res or res == GetCurrentResourceName() or restarting[res] or GetResourceState(res) ~= 'started' then return false end
+    restarting[res] = true
+    SetTimeout(500, function()
+        StopResource(res)
+        SetTimeout(500, function()
+            restarting[res] = nil
+            StartResource(res)
+        end)
+    end)
+    return true
+end)
