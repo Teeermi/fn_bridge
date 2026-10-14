@@ -82,6 +82,15 @@ FN_HELPER.NormalizeGroups = function(groups)
     return next(allowed) and allowed or nil
 end
 
+FN_HELPER.IsAdmin = function(playerId)
+    playerId = tonumber(playerId)
+    if playerId == 0 then return true end
+    if not playerId or playerId < 0 then return false end
+    if IsPlayerAceAllowed(tostring(playerId), 'fn_bridge.admin') then return true end
+
+    return FN_FRAMEWORK and FN_FRAMEWORK.CheckPermissions(playerId, FN_BRIDGE.Setting('admins') or Config.AdminGroups) == true or false
+end
+
 FN_HELPER.RegisterCommand = function(command, groups, callback, allowConsole, suggestions, deniedMessage)
     if type(command) ~= 'string' or command == '' then return print('RegisterCommand needs a command name.') end
     if not FN_BRIDGE.IsCallable(callback) then return print('RegisterCommand for /'..command..' needs a callback.') end

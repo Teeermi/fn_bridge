@@ -313,6 +313,10 @@ local function TierA()
         return ok, ('tunnel %s stranger %s tunneled %s v6 %s'):format(HTTP.Tunnel(), tostring(stranger), tostring(tunneled), tostring(v6))
     end)
 
+    Check('IsAdmin', function()
+        return #Config.AdminGroups > 0 and FN_HELPER.IsAdmin(0) and not FN_HELPER.IsAdmin(-1) and not FN_HELPER.IsAdmin(65535), table.concat(Config.AdminGroups, ',')
+    end)
+
     Check('framework contract', function()
         local missing = {}
         for _, key in ipairs(FN_BRIDGE.FrameworkContract) do

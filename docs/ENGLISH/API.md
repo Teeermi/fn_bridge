@@ -268,6 +268,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `GetIdentifiers` | `playerId` | map of identifier type to value |
 | `GetPlayer` | `playerId` | `{ id, name, identifiers }`, or `nil` |
 | `BanPlayer` | `playerId`, `reason` | nothing |
+| `IsAdmin` | `playerId` | `true` for the console, players in `fn_bridge:admins` (or `Config.Bridge.admins` of the calling script) and players with the `fn_bridge.admin` ACE |
 | `RegisterCommand` | `command`, `groups`, `callback`, `allowConsole`, `suggestions`, `deniedMessage` | nothing |
 | `GetNetIdFromEntity` | `entity`, `timeout` | net id, or `false` |
 | `GetEntityFromNetId` | `netId`, `timeout` | entity, or `false` |

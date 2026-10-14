@@ -6,6 +6,9 @@ end
 
 local setupCommand = Convar('setup', 'setup')
 
+local admins = {}
+for name in Convar('admins', 'admin,superadmin,god'):gmatch('[^%s,]+') do admins[#admins + 1] = name end
+
 Config = {
     ResourceName = GetCurrentResourceName(),
     Debug = Convar('debug', 'false') == 'true',
@@ -19,7 +22,7 @@ Config = {
     Postal = Convar('postal', 'nearest-postal'),
     Dispatch = Convar('dispatch', 'auto'),
     Phone = Convar('phone', 'auto'),
-    AdminGroups = { 'admin', 'superadmin' },
+    AdminGroups = admins,
     Counter = {
         dutyAware = false,
         jobs = { 'police', 'ambulance' },

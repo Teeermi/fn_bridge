@@ -82,6 +82,7 @@ setr fn_bridge:notify "ox"
 | `fn_bridge:setup` | `setup` | name of the staff coordinate command, `off` removes it |
 | `fn_bridge:dispatch` | `auto` | the resource that gets emergency alerts, `none` for no alerts |
 | `fn_bridge:phone` | `auto` | the phone that gets notifications, mail and texts from scripts, `none` for none |
+| `fn_bridge:admins` | `admin,superadmin,god` | your staff groups, comma separated; every FIVENUTS script treats them as admins |
 | `fn_bridge:debug` | `false` | `true` prints every detection step and draws target zones |
 | `fn_bridge:tunnel` | `off` | `on` when the web pages of fivenuts scripts go through a Cloudflare Tunnel; direct requests to the game port then get 403 ([PROTECTION.md](docs/ENGLISH/PROTECTION.md)) |
 

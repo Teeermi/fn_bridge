@@ -78,6 +78,7 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:postal` | `nearest-postal` | Resource with your postal codes map |
 | `fn_bridge:dispatch` | `auto` | Which resource gets emergency alerts, `none` turns them off |
 | `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts, `none` turns them off |
+| `fn_bridge:admins` | `admin,superadmin,god` | Your staff groups, see [Admins](#admins) |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
 | `fn_bridge:tunnel` | `off` | `on` when web pages of fivenuts scripts go through a Cloudflare Tunnel or a proxy on this machine, see [PROTECTION.md](PROTECTION.md) |
 
@@ -87,6 +88,16 @@ ox_lib is never picked automatically for notifications or text UI, because it's 
 setr fn_bridge:notify "ox"
 setr fn_bridge:helptext "ox"
 ```
+
+### Admins
+
+Every FIVENUTS script asks fn_bridge who is an admin. List the groups your staff have in your framework (`xPlayer.group` on ESX, the permission on QBCore and QBox, the group on ox_core and vRP):
+
+```cfg
+setr fn_bridge:admins "owner,management,headadmin,admin"
+```
+
+A player with the `fn_bridge.admin` ACE is an admin too, which helps when your staff ranks live in an admin menu instead of the framework: `add_ace group.moderator fn_bridge.admin allow`. Each script also keeps its own ACE (for example `fn_phone.admin`) for when you want someone to manage only that one script. Players get admin rights the next time they join. Framework groups only count once the player has a character loaded, so on the character select screen use the ACE.
 
 ### Photo uploads
 
@@ -126,6 +137,7 @@ Config.Bridge = {
 | `garage` | stock garages | Which column means parked (`parkedColumn`, its value when parked, `parkedOut` for its value when out), the garage column, and extra columns to fill when the script adds a car |
 | `dirtyMoney` | `markedbills`, `black_money`, `dinheirosujo` | The item used as black money where the framework has no black money account |
 | `banWebhook` | empty | Discord webhook for the script's ban logs |
+| `admins` | `fn_bridge:admins` | Staff groups for this script only, as a list: `{ 'owner', 'cardev' }` |
 | `notify`, `showHelp`, `hideHelp`, `chat`, `revive`, ... | not set | Your own functions for this script only, see `fn_bridge_custom` below |
 
 Leave out what you don't change. fn_bridge reads `Config.Bridge` on its own when the script starts.
