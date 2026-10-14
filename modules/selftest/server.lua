@@ -313,6 +313,11 @@ local function TierA()
         return ok, ('tunnel %s stranger %s tunneled %s v6 %s'):format(HTTP.Tunnel(), tostring(stranger), tostring(tunneled), tostring(v6))
     end)
 
+    Check('update checksums', function()
+        local list = FN_UPDATE.Edited()
+        return FN_UPDATE.Hash('a') == 'e40c292c' and FN_UPDATE.Hash('a\r\nb') == FN_UPDATE.Hash('a\nb'), list and table.concat(list, ', ') or 'from source'
+    end)
+
     Check('IsAdmin', function()
         return #Config.AdminGroups > 0 and FN_HELPER.IsAdmin(0) and not FN_HELPER.IsAdmin(-1) and not FN_HELPER.IsAdmin(65535), table.concat(Config.AdminGroups, ',')
     end)

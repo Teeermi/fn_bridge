@@ -48,6 +48,10 @@ There is no config file inside fn_bridge. Delete the folder, put the new release
 Scripts hold the old copy until they restart, and `ensure fn_bridge` on a live server counts as a restart. Every
 script checks the version it needs on start and prints the download link if yours is older.
 
+On start fn_bridge asks GitHub once for the latest release and prints a line in the console when there is a newer one.
+It also compares its files with `checksums.json` from the release and lists the ones you changed, because the next update
+replaces them. `fnb_doctor` shows the same list. Move such changes to `fn_bridge_custom`, a convar or `Config.Bridge`.
+
 ## Used by
 
 | Script | Uses |

@@ -318,6 +318,15 @@ local function Skeleton(wanted)
     end
 end
 
+local function Files()
+    print('^5files^7')
+    local list = FN_UPDATE.Edited()
+    if not list then return Line('release', 'no checksums.json', 'running from source, nothing to compare') end
+    if #list == 0 then return Line('release', 'unchanged', 'an update keeps nothing of yours, it is all outside fn_bridge') end
+
+    for _, path in ipairs(list) do Line('changed', path, 'the next update replaces it, move the change to fn_bridge_custom') end
+end
+
 RegisterCommand('fnb_doctor', function(source)
     if source ~= 0 then return end
     if not FN_BRIDGE.IsReady() then return print('fn_bridge is not ready yet') end
@@ -328,6 +337,7 @@ RegisterCommand('fnb_doctor', function(source)
 
         print(('^5fn_bridge %s doctor^7'):format(FN_BRIDGE.version))
         Choices(client)
+        Files()
         Shape()
         local wanted = Unknown(resources, client)
         Includes(resources)

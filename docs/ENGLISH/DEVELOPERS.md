@@ -32,7 +32,7 @@ dependencies { 'ox_lib', 'oxmysql', 'fn_bridge' }
 fn_bridge_version '1.2.0'
 ```
 
-An older fn_bridge then prints a clear line in the console instead of failing on a missing function.
+From fn_bridge 1.3.1 an older fn_bridge doesn't start your script at all and says which version it needs. Older bridges only print that line, and your script keeps running. FXServer won't let a resource stop itself, so make the rest of your code quiet when the check fails.
 
 `@fn_bridge/callback.lua` goes right after `@ox_lib/init.lua`. You keep writing `lib.callback`, `lib.callback.await` and
 `lib.callback.register` as usual, but calls from your client to your own server are sent together, one event per frame.

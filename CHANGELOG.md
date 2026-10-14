@@ -1,5 +1,14 @@
 # fn_bridge changelog
 
+## 1.3.1 (2026-10-14)
+
+Added
+- The console says when a newer fn_bridge is out. fn_bridge asks GitHub once on start, and without internet access it says nothing.
+- A script that needs a newer fn_bridge than the one running no longer starts. The console says which script and which version it needs. A script can't stop itself once it has started, so before this it kept running half broken.
+- The console lists fn_bridge files you changed, on every start. The release carries checksums.json and the next update replaces those files, so move the change to fn_bridge_custom, a convar or Config.Bridge first. Line endings don't count as a change. fnb_doctor shows the same list under files.
+
+No API changes. Scripts that ask for 1.3.0 or older work with this version.
+
 ## 1.3.0 (2026-10-14)
 
 Added

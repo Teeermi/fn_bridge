@@ -225,7 +225,8 @@ For an inventory fn_bridge doesn't support, scripts that need one ship their own
 - **In standalone mode** fn_bridge keeps cars in its own `fn_vehicles` table, created the first time a script adds one.
 - **On ESX, fn_bridge adds one index** (`fn_bridge_job` on `users.job`) the first time it starts, if `job` has none yet. It speeds up job rosters and changes no data. If your database user isn't allowed to create indexes, it prints a warning and works without it.
 - **Don't restart fn_bridge on a live server.** The scripts that use it keep pointing at the old copy. Restart the whole server instead. `ensure fn_bridge` on a running server counts as a restart.
-- **Don't edit its files.** Updates overwrite them. Everything you're meant to change is a convar in `server.cfg`, a hook in `fn_bridge_custom`, or `Config.Bridge` in a script's config.
+- **Don't edit its files.** Updates overwrite them. Everything you're meant to change is a convar in `server.cfg`, a hook in `fn_bridge_custom`, or `Config.Bridge` in a script's config. If you did, the console lists the changed files on every start (and so does `fnb_doctor`), so you can move the change before you update.
+- **New versions.** fn_bridge asks GitHub once on start and prints a line when a newer release is out. A server without internet access just skips it.
 
 ## Troubleshooting
 
