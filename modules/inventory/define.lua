@@ -15,7 +15,7 @@ FN_INVENTORY.DefineItems = function(items)
     if FN_BRIDGE.IsFramework('qb') and not FN_BRIDGE.IsInventory('ox_inventory') then
         for _, item in ipairs(items) do
             pcall(function()
-                exports['qb-core']:AddItem(item.name, { name = item.name, label = item.label, weight = item.weight or 0, type = 'item', image = item.name .. '.png', unique = item.unique == true, useable = item.use == true, shouldClose = true, description = item.description or item.desc or '' })
+                exports['qb-core']:AddItem(item.name, { name = item.name, label = item.label, weight = item.weight or 0, type = 'item', image = type(item.image) == 'string' and item.image or item.name .. '.png', unique = item.unique == true, useable = item.use == true, shouldClose = true, description = item.description or item.desc or '' })
             end)
         end
 

@@ -464,7 +464,7 @@ Every item comes back like this:
 | `SetMetadata` | `playerId`, `slot`, `metadata` | boolean |
 | `CanCarry` | `playerId`, `itemName`, `count`, `metadata` | boolean, `true` when the inventory cannot tell |
 | `ItemExists` | `itemName` | boolean, `true` when the inventory cannot tell |
-| `DefineItems` | array of `{ name, label, weight, unique, use, description }` | `{ kind, missing, added, restart }` (registers on QBCore and ESX, lists what ox_inventory and others still need) |
+| `DefineItems` | array of `{ name, label, weight, unique, use, description, image }` | `{ kind, missing, added, restart }` (registers on QBCore and ESX, lists what ox_inventory and others still need). `image` is the file name QBCore shows, `<name>.png` when left out |
 | `GetMaxWeight` | `playerId` | grams, or `false` (ox_inventory) |
 | `SetMaxWeight` | `playerId`, `grams` | boolean (ox_inventory) |
 | `GetLoadout` | `playerId` | array of `{ name, label, ammo }`: weapons ESX keeps outside the inventory, `{}` everywhere else |

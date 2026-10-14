@@ -1,5 +1,12 @@
 # fn_bridge changelog
 
+## 1.3.2 (2026-10-14)
+
+Added
+- INVENTORY.DefineItems takes an image file name per item. On QBCore a renamed item keeps the icon its script ships, for example an fnBook item called fnbook still shows laptop.png. Without it the image stays <name>.png as before.
+
+No API changes for scripts that don't pass it. Scripts that ask for 1.3.1 or older work with this version.
+
 ## 1.3.1 (2026-10-14)
 
 Added
