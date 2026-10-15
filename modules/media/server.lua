@@ -1,6 +1,7 @@
 FN_MEDIA = {}
 
 local Encodings = { webp = true, jpg = true, png = true }
+local Kinds = { video = true, image = true, audio = true }
 
 local function Started(resource)
     return GetResourceState(resource) == 'started'
@@ -128,8 +129,8 @@ local function Http(mime, b64, opts)
 end
 
 FN_MEDIA.Upload = function(data, opts)
-    local mime, b64 = (type(data) == 'string' and data or ''):match('^data:image/(%w+)[^,]-;base64,(.+)$')
-    if not b64 then return false end
+    local kind, mime, b64 = (type(data) == 'string' and data or ''):match('^data:(%a+)/(%w+)[^,]-;base64,(.+)$')
+    if not b64 or not Kinds[kind] then return false end
 
     local provider = FN_MEDIA.Provider(opts)
     if provider == 'fivedock-agent' then return Agent(mime, b64, opts) or false end
@@ -165,8 +166,6 @@ FN_MEDIA.Delete = function(files, opts)
 
     return n
 end
-
-local Kinds = { video = true, image = true, audio = true }
 
 FN_MEDIA.Ticket = function(opts)
     opts = Opts(opts)

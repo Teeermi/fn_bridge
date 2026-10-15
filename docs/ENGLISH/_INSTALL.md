@@ -77,7 +77,8 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:setup` | `setup` | Name of the staff coordinate command, `off` removes it |
 | `fn_bridge:postal` | `nearest-postal` | Resource with your postal codes map |
 | `fn_bridge:dispatch` | `auto` | Which resource gets emergency alerts, `none` turns them off |
-| `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts, `none` turns them off |
+| `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts and keeps the numbers scripts change, `none` turns them off |
+| `fn_bridge:voice` | `auto` | Which voice script carries phone calls and the radio: `pma-voice`, `saltychat`, `yaca-voice`, `mumble-voip`, or `none` |
 | `fn_bridge:admins` | `admin,superadmin,god` | Your staff groups, see [Admins](#admins) |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
 | `fn_bridge:tunnel` | `off` | `on` when web pages of fivenuts scripts go through a Cloudflare Tunnel or a proxy on this machine, see [PROTECTION.md](PROTECTION.md) |
@@ -195,7 +196,8 @@ end)
 | `job` | server | `playerId`, returns a job table | The player's job |
 | `phone` | server | `playerId`, returns a string | Phone number |
 | `dispatch` | server | `playerId, alert` | Police and EMS alerts |
-| `housing` | server | `identifier, playerId`, returns homes | Homes a character owns |
+| `housing` | server | a function `identifier, playerId` returning homes, or a table `{ list, isLocked, setLocked, forSale, starters, resume, prepare }` | Homes a character owns or has keys to, their locks, homes for sale, starter apartments, spawning back inside. See [API.md](API.md#fn_bridgehousing-server) |
+| `giveHome` | server | `playerId, home, identifier`, returns `true` or `false, reason` | Handing a home to a character. `home` is `{ house = id }` or `{ starter = id }`, and the player is online |
 | `chat` | server | `playerId, author, message, color` | Chat messages from scripts |
 | `garage` | server | a table, not a function | Garage columns, see `Config.Bridge` above |
 | `dirtyMoney` | server | a table, not a function | Black money item |
@@ -203,21 +205,25 @@ end)
 | `duty` | server | `playerId`, returns a boolean | On or off duty, for a job core that counts it |
 | `multijob` | server | `{ list, set, add }` | Several jobs per character |
 | `insurance` | server | `identifier`, returns `{ active, plan, expires }` | Health insurance |
-| `jail` | server | `{ send, release, get }` | Your prison script |
+| `jail` | server | `{ send, release, get, offline }` | Your prison script. `offline(identifier)` returns minutes left for a character on the select screen |
 | `communityService` | server | `playerId, actions, opts` | Community service |
 | `impound` | server | `plate, opts, vehicle` | Impounding a car in your garage script |
 | `gangAccount` | server | `gang`, returns the account name and `true` for dirty money | Where gang money is kept |
 | `societyAccount` | server | `job`, returns the account name | A company account with a name of its own |
 | `doors` | server | `{ list, isLocked, setLocked, allow }` | Your door lock script |
 | `interact` | both | server `{ cuff, escort, bag, ..., is }`, client `{ isCuffed }` | Cuffs, escort and the like in your police or crime script |
-| `appearance` | client | `{ set, restore }` | Wearing an outfit and taking it off |
+| `appearance` | both | client `{ set, restore, apply, creator }`, server `{ skin }` | Wearing an outfit and taking it off, dressing a preview ped from saved data, opening the creator for a new character, reading a skin your clothing script keeps in its own table. See [API.md](API.md#appearance) |
+| `spawns` | server | `playerId, identifier, isNew`, returns a list of points and `exclusive` | Extra spawn points on the character select, for a motel script for example |
+| `voice` | both | server `{ call, radio, getRadio, radioCount, mute, mumble }`, client `{ radioEnabled, radioTalk }` | Phone calls and the radio in your voice script |
+| `phoneNumber` | server | `{ get, taken, set, check, relog }` | Changing a character's phone number in a phone that keeps its own numbers |
+| `fuel` | client | `vehicle`, returns 0 to 100 | Fuel level |
 | `FRAMEWORK.AddMoney`, `INVENTORY.AddItem`, ... | both | same as in [API.md](API.md) | That one function, completely. Any function of any namespace, by its full name |
 
 A reader (`name`, `job`, `phone`, `gang`, `duty`) that returns `nil` falls back to what fn_bridge finds on its own. A full name like `FRAMEWORK.AddMoney` doesn't fall back, it replaces the function, so a server whose core was rewritten can still run every FIVENUTS script without touching fn_bridge. Stopping `fn_bridge_custom` removes its hooks.
 
 **One script needs something different?** The same keys work in that script's `Config.Bridge`, and they win over `fn_bridge_custom` for that script only. Client functions there only work from a config file the script also loads on the client (`shared_scripts` or `client_scripts`).
 
-For an inventory fn_bridge doesn't support, scripts that need one ship their own `Config.Inventory = 'custom'` hook, see that script's docs.
+An inventory fn_bridge has no adapter for goes in the same way, with full names: `INVENTORY.AddItem`, `INVENTORY.RemoveItem`, `INVENTORY.GetItemCount`, `INVENTORY.CanCarry` and `INVENTORY.ItemExists` on the server cover what the scripts need to give and take items. Arguments and results are in [API.md](API.md#fn_bridgeinventory).
 
 ## 6. Good to know
 

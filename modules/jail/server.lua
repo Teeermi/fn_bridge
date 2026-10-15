@@ -38,7 +38,8 @@ local Adapters = {
             exports['xt-prison']:SetJailTime(id, 0)
             return lib.callback.await('xt-prison:client:exitJail', id, true) ~= false
         end,
-        get = function(id) return tonumber(Player(id).state.jailTime) end },
+        get = function(id) return tonumber(Player(id).state.jailTime) end,
+        offline = function(key) return tonumber(MySQL.scalar.await('SELECT jailtime FROM xt_prison WHERE identifier = ?', { key })) end },
     { resource = 'qb-prison',
         send = function(id, minutes)
             Meta(id, 'injail', minutes)
@@ -49,7 +50,8 @@ local Adapters = {
             TriggerClientEvent('prison:client:UnjailPerson', id)
             return true
         end,
-        get = function(id) return tonumber(Meta(id, 'injail')) end },
+        get = function(id) return tonumber(Meta(id, 'injail')) end,
+        offline = function(key) return tonumber(MySQL.scalar.await("SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.injail')) FROM players WHERE citizenid = ?", { key })) end },
     { resource = 'pickle_prisons',
         send = function(id, minutes, opts)
             local by = Online(opts.by)
@@ -61,7 +63,8 @@ local Adapters = {
         get = function(id)
             local identifier = Identifier(id)
             return identifier and tonumber(MySQL.scalar.await('SELECT time FROM pickle_prisons WHERE identifier = ?', { identifier })) or tonumber(Meta(id, 'injail'))
-        end },
+        end,
+        offline = function(key) return tonumber(MySQL.scalar.await('SELECT time FROM pickle_prisons WHERE identifier = ?', { key })) end },
     { resource = 'esx_jail',
         send = function(id, minutes)
             TriggerEvent('esx_jail:sendToJail', id, minutes * 60, true)
@@ -73,6 +76,10 @@ local Adapters = {
         end,
         get = function(id)
             local seconds = UserColumn(id, 'jail_time')
+            return seconds and math.ceil(seconds / 60)
+        end,
+        offline = function(key)
+            local seconds = FN_DB.HasColumn('users', 'jail_time') and tonumber(MySQL.scalar.await('SELECT jail_time FROM users WHERE identifier = ?', { key }))
             return seconds and math.ceil(seconds / 60)
         end },
     { resource = 'esx-qalle-jail',
@@ -86,7 +93,8 @@ local Adapters = {
             UserColumn(id, 'jail', 0)
             return true
         end,
-        get = function(id) return UserColumn(id, 'jail') end },
+        get = function(id) return UserColumn(id, 'jail') end,
+        offline = function(key) return FN_DB.HasColumn('users', 'jail') and tonumber(MySQL.scalar.await('SELECT jail FROM users WHERE identifier = ?', { key })) end },
 }
 
 for _, adapter in ipairs(Adapters) do FN_KNOWN[adapter.resource] = true end
@@ -149,6 +157,20 @@ J.Get = function(playerId)
     if not adapter then return false end
 
     local minutes = Run(adapter.get, playerId)
+    if type(minutes) == 'table' then return minutes end
+
+    minutes = tonumber(minutes)
+
+    return minutes and minutes > 0 and { minutes = math.ceil(minutes) } or false
+end
+
+J.GetOffline = function(identifier)
+    if type(identifier) ~= 'string' or identifier == '' or #identifier > 64 then return false end
+
+    local adapter = Pick()
+    if not adapter or not FN_BRIDGE.Callable(adapter.offline) then return false end
+
+    local minutes = Run(adapter.offline, identifier)
     if type(minutes) == 'table' then return minutes end
 
     minutes = tonumber(minutes)

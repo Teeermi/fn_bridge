@@ -6,6 +6,12 @@ FN_INVENTORY.GetPlayerItems = function(playerId)
     return FN_BRIDGE.NormalizeItems(exports['tgiann-inventory']:GetPlayerItems(playerId))
 end
 
+FN_INVENTORY.CanCarry = function(playerId, itemName, count)
+    local ok, result = pcall(function() return exports['tgiann-inventory']:CanCarryItem(playerId, itemName, count or 1) end)
+
+    return not ok or result ~= false
+end
+
 FN_INVENTORY.AddItem = function(playerId, itemName, count, metadata, slot)
     return exports['tgiann-inventory']:AddItem(playerId, itemName, count, slot, metadata) and true or false
 end

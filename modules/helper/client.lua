@@ -151,6 +151,36 @@ FN_HELPER.Seatbelt = function()
     return nil
 end
 
+local Fuels = { 'LegacyFuel', 'cdn-fuel', 'ps-fuel', 'lj-fuel', 'okokGasStation', 'ti_fuel', 'x-fuel' }
+
+for _, resource in ipairs(Fuels) do FN_KNOWN[resource] = true end
+
+FN_HELPER.GetFuel = function(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return nil end
+
+    local hook = FN_BRIDGE.Setting('fuel')
+    if FN_BRIDGE.Callable(hook) then
+        local ok, level = pcall(hook, vehicle)
+        if ok and tonumber(level) then return tonumber(level) end
+    end
+
+    local bag = Entity(vehicle).state.fuel
+    if type(bag) == 'number' then return bag end
+
+    for _, resource in ipairs(Fuels) do
+        if GetResourceState(resource) == 'started' then
+            local fuel = exports[resource]
+            for _, name in ipairs({ 'GetFuel', 'getFuel' }) do
+                local ok, level = pcall(function() return fuel[name](fuel, vehicle) end)
+                if ok and type(level) == 'number' then return level end
+            end
+            break
+        end
+    end
+
+    return GetVehicleFuelLevel(vehicle)
+end
+
 local postals
 
 FN_HELPER.Postal = function(coords)

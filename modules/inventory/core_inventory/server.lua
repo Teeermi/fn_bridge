@@ -19,6 +19,12 @@ FN_INVENTORY.GetPlayerItems = function(playerId)
     return ok and items or {}
 end
 
+FN_INVENTORY.CanCarry = function(playerId, itemName, count, metadata)
+    local ok, result = pcall(function() return exports.core_inventory:canCarry(playerId, itemName, count or 1, metadata) end)
+
+    return not ok or result ~= false
+end
+
 FN_INVENTORY.AddItem = function(playerId, itemName, count, metadata)
     return exports.core_inventory:addItem(playerId, itemName, count or 1, metadata) and true or false
 end

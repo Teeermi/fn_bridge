@@ -221,6 +221,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `StarterItems` | `playerId` | array of `{ item, amount, meta }` from the framework's starter list |
 | `Money` | `key` | cash + bank of an offline character, or `nil` |
 | `Dossier` | `key` | `{ veh, lic, rec, jail }`: vehicles, licences, fines, jail time |
+| `Spawns` | `playerId`, `key`, `isNew` | points from the `spawns` hook and `exclusive` (`true` = use only these), `{}, false` without a hook |
 
 ## FN_BRIDGE.CHARACTERS (client)
 
@@ -229,7 +230,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `IsLoggedIn` | none | boolean |
 | `Prepare` | none | turns off auto spawn and weather sync before your select screen |
 | `LoadingOff` | none | closes the loading screen |
-| `Spawn` | `coords`, `{ isNew, sex, kind, creator, ready, appearance, login }` | `false` when `login` failed. Places the player the framework's way and fires its loaded events. `ready()` is called right before the screen fades in, `appearance(sex)` opens your creator for a new character (return `false` to use the framework's), `login()` runs the deferred login on ox_core |
+| `Spawn` | `coords`, `{ isNew, sex, kind, creator, ready, appearance, login }` | `false` when `login` failed. Places the player the framework's way and fires its loaded events. `ready()` is called right before the screen fades in, `appearance(sex)` opens your creator for a new character (return `false` to try the `appearance` hook's `creator`, then the framework's), `login()` runs the deferred login on ox_core |
 | `Loaded` | none | fires the framework's player loaded events, for your own spawn |
 | `Done` | none | turns weather sync back on |
 
@@ -282,6 +283,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `GetTimeInFormat` | `sec` | `HH:MM`, or `HH:MM:SS` |
 | `Seatbelt` | none | `true` buckled, `false` not, `nil` when no seatbelt script is known |
 | `Postal` | `coords` | nearest postal code as a string, or `nil` without a postal resource |
+| `GetFuel` | `vehicle` | fuel level (0 to 100) on the client, or `nil` for a missing vehicle |
 | `NumWithCommas` | `num` | `'1,250'` |
 | `SafeCall` | `func`, `...` | the result, or `nil` if it errored |
 | `RegisterNetEvent` | `eventName`, `cb`, `safeEvent` | handler, removed when your resource stops |
@@ -296,6 +298,8 @@ Config.Bridge = {
     seatbelt = function() return exports['my_seatbelt']:IsOn() end,
 }
 ```
+
+**GetFuel** asks the `fuel` hook first (`function(vehicle)` returning a number), then the `fuel` state bag on the vehicle (ox_fuel and most newer scripts), then LegacyFuel, cdn-fuel, ps-fuel, lj-fuel, okokGasStation, ti_fuel or x-fuel, and last the game value.
 
 **Postal** reads the postal file of the resource named by `setr fn_bridge:postal` (default `nearest-postal`, file from its `postal_file` metadata).
 
@@ -527,12 +531,12 @@ Works with esx_addonaccount, qb-management, qb-banking and Renewed-Banking, dete
 
 | Function | Args | Returns |
 | --- | --- | --- |
-| `Name` | none | the dispatch resource alerts go to, or `false` |
+| `Name` | `skip` (optional) | the dispatch resource alerts go to, or `false`. `skip` is a resource name to leave out |
 | `Send` | `playerId`, `alert` | the resource that took the alert, or `false` |
 
 `alert` fields, all optional: `code` (`'10-52'`), `title`, `message`, `coords` (the player's position when left out), `jobs` (list or one job name, default `police`), `sprite`, `color`, `priority` (`1` high, `2` normal, `3` low), `street`.
 
-Picks the first one running: fn_phone (its service apps get a report and it forwards to your dispatch), lb-tablet, ps-dispatch, cd_dispatch, qs-dispatch, tk_dispatch, fd_dispatch, wasabi_mdt, origen_police, bub-mdt, kartik-mdt, redutzu-mdt, piotreq_gpt, linden_outlawalert, emergencydispatch. `setr fn_bridge:dispatch` forces one, or `none`. When `Send` returns `false`, nobody got the alert, so your script should tell the job its own way.
+Picks the first one running: fn_mdt, fn_phone (its service apps get a report and it forwards to your dispatch), lb-tablet, ps-dispatch, cd_dispatch, qs-dispatch, tk_dispatch, fd_dispatch, wasabi_mdt, origen_police, bub-mdt, kartik-mdt, redutzu-mdt, piotreq_gpt, linden_outlawalert, emergencydispatch. `setr fn_bridge:dispatch` forces one, or `none`. `Send` never hands an alert back to the script that sent it, so fn_phone can send through the bridge and the alert goes on to the next one. When `Send` returns `false`, nobody got the alert, so your script should tell the job its own way.
 
 ```lua
 local via = FN_BRIDGE.DISPATCH.Send(source, { code = '10-52', title = 'Person down', jobs = { 'ambulance' }, priority = 1 })
@@ -553,11 +557,24 @@ Added in 1.0.1. Sends things to the player's phone, whatever phone the server ru
 | `Notify` | `playerId`, `{ title, body, app, icon, color }` | the phone resource that showed it, or `false` |
 | `Mail` | `playerId` or a character identifier, `{ sender, subject, message }` | the phone resource that got it, or `false` |
 | `Message` | `fromNumber`, `playerId` or a number, `text` | the phone resource that sent it, or `false` |
+| `Numbers` | none | `{ name, relog }` when phone numbers can be changed, or `false, reason, resource` |
+| `NumberTaken` | `number` | `true` when someone has it (and for an empty number) |
+| `CanSetNumber` | `playerId` | `true`, or `false, reason` |
+| `SetNumber` | `playerId`, `number` | `true, oldNumber`, or `false, reason` |
 
 Picks the first one running: fn_phone, lb-phone, npwd, qb-phone. `setr fn_bridge:phone` forces one, or `none`.
 `title` is required for `Notify`, `subject` and `message` for `Mail`. `app` is an app id of that phone (fn_phone,
 lb-phone), `icon` a Font Awesome class and `color` a hex colour (qb-phone). A character identifier reaches players
 who are offline (the citizenid on QBCore and Qbox, the identifier on ESX).
+
+`SetNumber` changes a character's number where the phone keeps it: fn_phone gives a SIM card with that number,
+lb-phone renames the number in every `phone_*` table in one transaction (`relog`: the player sees it after a rejoin),
+npwd writes the framework field and loads the character again on QBCore and Qbox, and without a phone script the
+framework field changes (`charinfo.phone`, `users.phone_number`). Phones that keep numbers in their own way
+(gksphone, qs-smartphone, yseries, okokPhone, roadphone, high-phone, 17mov, jpr) make `Numbers` return
+`false, 'unsupported', resource` until you add the `phoneNumber` hook: `{ get = fn(playerId), taken = fn(number),
+set = fn(playerId, number, old), check = fn(playerId, current), relog = true }` (only `set` is required). Reasons:
+`offline`, `invalid`, `taken`, `nophone` (lb-phone: no phone equipped), `unsupported`, `none`, `failed`.
 
 | | Notify | Mail | Message |
 | --- | --- | --- | --- |
@@ -578,21 +595,58 @@ end
 
 | Function | Args | Returns |
 | --- | --- | --- |
-| `Running` | none | housing resources found, in order |
-| `List` | `playerId`, `key` (optional) | up to 20 homes: `{ id, label, sub, coords = { x, y, z, w }, enter }` (`z` is `nil` when the resource does not store it) |
+| `Running` | none | housing resources found, in order (`'hook'` first when you added one) |
+| `List` | `playerId`, `key` (optional), `{ keys = true }` (optional) | up to 20 homes the character owns: `{ id, label, sub, coords = { x, y, z, w }, enter, owner, keys }`; with `keys = true` also the homes they hold a key to |
+| `IsLocked` | `homeId` | boolean, or `nil` when that home has no lock fn_bridge can reach |
+| `SetLocked` | `homeId`, `locked`, `playerId` (optional) | the new state, or `nil` |
+| `ForSale` | none | homes on the market: `{ id, label, coords, price }` |
+| `Starters` | none | starter apartments to pick from: `{ id, label, sub, coords, enter }`, and `true` as a second value when the framework's own character creator picks the apartment |
+| `Resume` | a character from `CHARACTERS.List` | `{ event, server, args }` that puts the player back in the home they logged out in, or `nil` |
+| `Prepare` | `homeId`, `key`, `coords` | `true`; call it before spawning a player at a home (esx_property needs `last_property` set) |
+| `Giver` | none | `{ name, house, starter, offline }` for the script that can hand out homes, or `false` |
+| `Give` | `playerId`, `home`, `key` (optional) | `true`, or `false, reason` |
 
-`key` is the character identifier (citizenid on QB/Qbox, the ESX identifier); when left out it comes from `playerId`. Reads qb-houses, qb-apartments, qbx_properties, ps-housing, esx_property, qs-housing and bcs_housing. `enter`, when the resource has one, is `{ event, server, args }` that puts the player inside. Homes without coordinates are skipped.
+`key` is the character identifier (citizenid on QB/Qbox, the ESX identifier); when left out it comes from `playerId`. Reads qb-houses, qb-apartments, qbx_properties, ps-housing, esx_property, qs-housing and bcs_housing. `owner` is `false` for a home the character only has a key to, `keys` lists the identifiers of the other key holders. `enter`, when the resource has one, is `{ event, server, args }` that puts the player inside. `coords` is `nil` when the resource keeps none. Locks work on qb-houses and bcs_housing, homes for sale come from qb-houses, ps-housing, qbx_properties and esx_property, starter apartments from qb-apartments and qbx_properties.
 
-## FN_BRIDGE.VOICE (client)
+Any other housing script plugs in with the `housing` hook. A function is the list alone; a table can add the rest: `{ list = fn(identifier, playerId), isLocked = fn(homeId), setLocked = fn(homeId, locked, playerId), forSale = fn(), starters = fn(), resume = fn(character), prepare = fn(homeId, key, coords) }`. Return home ids with a prefix of your own so they don't clash with other scripts, and `nil` from `isLocked` for a home that isn't yours.
 
-| Function | Args | Returns |
-| --- | --- | --- |
-| `Name` | none | the voice resource (`'pma-voice'` or `'saltychat'`), or `false` |
-| `Get` | none | `{ name, modes = { { index, distance, name } }, range, distance, custom, cycle, radio, call }` or `nil` |
-| `SetRange` | `index` | `true` when the talk range is now that mode |
-| `SetVolume` | `'radio'` or `'call'`, `0..100` | `true` when the voice resource took it |
+`Give` hands a home to a character. `home` is `{ house = id }` for a house you already created, or `{ starter = id }` for a new starter apartment in that building, plus an optional `reason` for the housing script's log. It works with bcs_housing (`house`, player online) and nolag_properties (`house` and `starter`, offline too, by `key`). `key` is the character identifier and comes from `playerId` when left out. `Giver` tells you up front what the running script can do: `house` and `starter` are the modes it takes, `offline` means `playerId` can be `nil`. Reasons: `none` (no script), `invalid`, `unsupported` (that mode), `offline`, `identifier`, `failed`, or what your hook returned. Any other housing script plugs in through the `giveHome` hook in `Config.Bridge`. qs-housing has no export for handing out a house, so a qs-housing server needs that hook too.
 
-Works with pma-voice and SaltyChat. `custom` is set while a script overrides the range, `SetRange` then returns `false`. `cycle` is `false` when the server turned range cycling off (`voice_enableProximityCycle 0`). SaltyChat modes come from its `config.json` `VoiceRanges` and have no `name`, it has no call volume (`call` is `nil`), and its radio volume above 100% reads as 100.
+```lua
+local giver = FN_BRIDGE.HOUSING.Giver()
+if giver and giver.house then
+    local ok, why = FN_BRIDGE.HOUSING.Give(source, { house = 'vinewood_12', reason = 'shop purchase' })
+end
+```
+
+## FN_BRIDGE.VOICE
+
+| Function | Side | Args | Returns |
+| --- | --- | --- | --- |
+| `Name` | both | none | `'hook'`, `'pma-voice'`, `'saltychat'`, `'yaca-voice'`, `'mumble-voip'` or `false` |
+| `Mumble` | server | none | `true` when the voice runs on FiveM's own Mumble (pma-voice, mumble-voip), so scripts can use the Mumble natives (listening in, volume) |
+| `SetCall` | server | `playerId`, `callId` (number or string, `nil` to leave) | boolean |
+| `GetCall` | server | `playerId` | the call id, or `nil` |
+| `MuteCall` | server | `playerId`, `on` | `true` when the change took |
+| `CallMuted` | server | `playerId` | boolean |
+| `GetRadio` | server | `playerId` | channel number, `0` or `false` |
+| `SetRadio` | server | `playerId`, `channel` | boolean, `0` leaves the radio |
+| `RadioCount` | server | `channel` | players on that channel |
+| `GetRadio` | client | none | radio channel as a number, `0` when off, `false` without a voice resource |
+| `SetRadio` | client | `channel` | boolean, `0` leaves the radio |
+| `RadioEnabled` | client | `on` | `true`; pma-voice only lets a player talk on the radio while this is on |
+| `RadioTalk` | client | `on` | `true` when push to talk on the radio started or stopped |
+| `Get` | client | none | `{ name, modes = { { index, distance, name } }, range, distance, custom, cycle, radio, call }` or `nil` |
+| `SetRange` | client | `index` | `true` when the talk range is now that mode |
+| `SetVolume` | client | `'radio'` or `'call'`, `0..100` | `true` when the voice resource took it |
+
+Phone calls: put every player in a call on the same `callId` with `SetCall`. fn_bridge keeps who is in which call and joins them the way the voice script wants it (a call channel on pma-voice and mumble-voip, player pairs on SaltyChat and YACA). `MuteCall` silences a player for the other side only; on pma-voice and mumble-voip the others' clients turn that player down while people standing next to them (4 m) still hear them. A player who drops leaves the call and the radio.
+
+Radio is the primary channel. A radio item script on top (mm_radio, qb-radio) keeps working, it sees the change from the voice resource. `setr fn_bridge:voice` picks the voice script, `none` turns calls and radio off. The local client event `fn_bridge:radioTalking` (`serverId` or `nil` for yourself, `talking`) fires when someone on your channel talks (pma-voice).
+
+Another voice script plugs in with the `voice` hook: `{ call = fn(playerId, callId), radio = fn(playerId, channel), getRadio = fn(playerId), radioCount = fn(channel), mute = fn(playerId, on), mumble = true }` on the server (`call` and `radio` are the ones that matter, `mute` returns `true` when it muted), and `{ radioEnabled = fn(on), radioTalk = fn(on) }` on the client.
+
+`Get`, `SetRange` and `SetVolume` work with pma-voice and SaltyChat. `custom` is set while a script overrides the range, `SetRange` then returns `false`. `cycle` is `false` when the server turned range cycling off (`voice_enableProximityCycle 0`). SaltyChat modes come from its `config.json` `VoiceRanges` and have no `name`, it has no call volume (`call` is `nil`), and its radio volume above 100% reads as 100.
 
 ## FN_BRIDGE.PREFS (client)
 
@@ -617,6 +671,7 @@ Values: `lang` (a language code, `''` follows the server), `clock` (`'24'`, `'12
 | `Revive` | server | `playerId` | how the player was revived (`'hook'`, a resource name, `'bridge'`) or `false` |
 | `SetFlag` | server | `playerId`, `on` | `true` when the framework flag was written |
 | `Reviver` | server | none | the resource `Revive` goes to, or `false` for the built-in revive |
+| `Ambulances` | server | none | ambulance scripts running next to yours: a death provider, `'hook'` for a `revive` hook, esx_ambulancejob, qb-ambulancejob, qbx_medical, wasabi_ambulance, ars_ambulancejob, ak47_ambulancejob |
 | `Provide` | both | `impl` or `nil` | `true` when registered |
 
 Without a provider, `GetState` reads QBCore and Qbox metadata (`inlaststand`, `isdead`), then state bags (`inlaststand`, `laststand`, `isDown`, `down` mean down; `isDead`, `IsDead`, `isdead`, `dead`, `Dead` mean dead), then the ped's health. That covers esx_ambulancejob, qb-ambulancejob, qbx_medical, ox_core and most paid ambulance scripts without an adapter.
@@ -645,7 +700,7 @@ Config.Bridge = {
 | `Capturer` | none | `'screencapture'`, `'screenshot-basic'` or `false` |
 | `Provider` | `opts` | `'fivedock'` (API token), `'fivedock-agent'` (the fivedock resource, no token), `'fivemanage'` or `false` |
 | `Capture` | `playerId`, `opts` | the player's screen as a `data:image/...;base64,` string, or `false` |
-| `Upload` | `dataUrl`, `opts` | `url, fileId`, or `false` |
+| `Upload` | `dataUrl`, `opts` | `url, fileId`, or `false`. Takes `data:image/`, `data:video/` and `data:audio/` |
 | `Shot` | `playerId`, `opts` | `Capture` then `Upload`: `url, fileId`, or `false, 'capture' or 'upload'` |
 | `Delete` | `fileIds`, `opts` | deletes uploaded files (needs a token), returns how many requests went out |
 | `IsUrl` | `url` | `true` for a plain `https://` URL that is safe to show in a UI |
@@ -733,9 +788,10 @@ Events (server, `AddEventHandler`):
 | `Send` | `playerId`, `minutes`, `opts` | boolean, error |
 | `Release` | `playerId`, `opts` | boolean, error |
 | `Get` | `playerId` | `{ minutes, reason }` (minutes left, `reason` may be `nil`), or `false` when free |
+| `GetOffline` | character identifier | `{ minutes }` for a character who is not loaded (character select), or `false` |
 | `CommunityService` | `playerId`, `actions`, `opts` | boolean, error; `actions = 0` ends it |
 
-`opts`: `{ reason, by }`, `by` is the officer's server id. Reads qb-prison, xt-prison (Qbox), pickle_prisons, esx_jail and esx-qalle-jail, community service from esx_communityservice. pickle_prisons only takes sentences from an officer's client, so it needs `by`. Errors: `'offline'`, `'none'`, `'officer'`, `'unsupported'` (`Release` on pickle_prisons, which has no release API), `'failed'`. `IsSupported('JAIL', 'Release')` is `false` when the picked adapter cannot release. Hooks: `jail` = `{ send = fn(playerId, minutes, opts), release = fn(playerId, opts), get = fn(playerId) }`, `communityService` = `function(playerId, actions, opts)`.
+`opts`: `{ reason, by }`, `by` is the officer's server id. Reads qb-prison, xt-prison (Qbox), pickle_prisons, esx_jail and esx-qalle-jail, community service from esx_communityservice. pickle_prisons only takes sentences from an officer's client, so it needs `by`. Errors: `'offline'`, `'none'`, `'officer'`, `'unsupported'` (`Release` on pickle_prisons, which has no release API), `'failed'`. `IsSupported('JAIL', 'Release')` is `false` when the picked adapter cannot release. Hooks: `jail` = `{ send = fn(playerId, minutes, opts), release = fn(playerId, opts), get = fn(playerId), offline = fn(identifier) }`, `communityService` = `function(playerId, actions, opts)`.
 
 ### VEHICLES (server)
 
@@ -792,18 +848,6 @@ A product registers with `FN_BRIDGE.Provide('staff', function(jobName) return tr
 
 The server asks the host for a short lived upload link, so the API token never reaches a player. The client sends a `multipart/form-data` POST with the file in `field` (`'file'`) to `url` and gets `{ data = { id, url } }` back. `opts`: `{ kind = 'video' (or 'image', 'audio'), contentType, maxSize (bytes), folder, ttl (seconds, default 900, max 3600), single (default true), token, provider }`. Needs a token (`opts.token` or `set fn_bridge:upload_token`); the fivedock agent alone cannot issue links. Errors: `'token'`, `'host'`.
 
-### VOICE
-
-| Function | Side | Args | Returns |
-| --- | --- | --- | --- |
-| `GetRadio` | client | none | radio channel as a number, `0` when off, `false` without a voice resource |
-| `SetRadio` | client | `channel` | boolean, `0` leaves the radio |
-| `Name` | server | none | `'pma-voice'`, `'saltychat'` or `false` |
-| `GetRadio` | server | `playerId` | channel number, `0` or `false` |
-| `SetRadio` | server | `playerId`, `channel` | boolean |
-
-pma-voice and SaltyChat (primary channel). A radio item script on top (mm_radio, qb-radio) keeps working, it sees the change from the voice resource.
-
 ### INVENTORY (server)
 
 | Function | Args | Returns |
@@ -828,11 +872,12 @@ pma-voice and SaltyChat (primary channel). A radio item script on top (mm_radio,
 | --- | --- | --- |
 | `Name` | none | `'hook'`, `'ox_doorlock'`, `'qb-doorlock'` or `false` |
 | `List` | none | array of `{ id, name, locked, coords }` |
+| `Get` | `id` | `{ id, name, locked, coords }`, or `nil` when there is no such door |
 | `IsLocked` | `id` | boolean |
 | `SetLocked` | `id`, `locked`, `playerId` (optional, who acts) | boolean |
 | `Allow` | `id`, `{ groups = { police = 0 }, identifiers = { ... } }` | boolean (who may use the door; replaces the lists) |
 
-ox_doorlock does all of it (`id` is its number or the door name). qb-doorlock only `SetLocked`. Hook `doors` = `{ list = fn(), isLocked = fn(id), setLocked = fn(id, locked, playerId), allow = fn(id, access) }`.
+ox_doorlock does all of it (`id` is its number or the door name). qb-doorlock only `SetLocked`. With a hook, `Get` asks `isLocked`, so return `nil` there for a door you don't know. Hook `doors` = `{ list = fn(), isLocked = fn(id), setLocked = fn(id, locked, playerId), allow = fn(id, access) }`.
 
 ### APPEARANCE
 
@@ -856,8 +901,10 @@ An outfit is the same everywhere, so it survives a change of clothing script:
 | `Set` | server | `playerId`, `outfit` | boolean |
 | `Restore` | server | `playerId` | boolean |
 | `FromCode` | server | `code` | outfit from an illenium-appearance outfit code, or `false` |
+| `Apply` | client | `ped`, `data` | boolean. Dresses any ped (a preview, a cast) from saved illenium-appearance, fivem-appearance, qb-clothing or skinchanger data |
+| `Creator` | client | `sex` (`'m'` or `'f'`) | `true` when the `appearance` hook opened a creator |
 
-`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn() }`.
+`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn(), apply = fn(ped, data), creator = fn(sex) }`, on the server `{ skin = fn(identifier) }` returning `{ model, skin }` for `CHARACTERS.List`.
 
 ### DEATH (server)
 
@@ -923,10 +970,13 @@ All namespaces exist on both sides. One with nothing behind it (like `TARGET` on
 | `fn_bridge/client/notified` | client | `message`, `type`, `resource` |
 | `fn_bridge/client/onVehicleEnter` | client | `vehicle`, `isDriver` |
 | `fn_bridge/client/onVehicleLeave` | client | `vehicle`, `wasDriver` |
+| `fn_bridge:characterSelect` | client | none, the framework sent the player back to character select (QBCore `/logout`, Qbox, ox_core, ESX) |
+| `fn_bridge:radioTalking` | client | `serverId` (`nil` for you), `talking` |
 | `fn_bridge/server/playerLoaded` | server | `playerId`, player object |
 | `fn_bridge/server/onJobChange` | server | `playerId`, `job`, `lastJob` |
 | `fn_bridge/server/jobCountChanged` | server | `jobName`, `count`, `previous` |
 | `fn_bridge/server/onMoneyChange` | server | `playerId`, `account`, `delta`, `reason` (ESX, QBCore, QBox) |
+| `fn_bridge:characterLogout` | server | `playerId`, when the player left their character without leaving the server |
 
 - `onJobChange` fires on any job or grade change, with the same `job` table shape on every framework. `lastJob` is `nil` on the first change of a session.
 - `jobCountChanged` fires when a job's online count changes. A job switch fires it twice: once for the old job, once for the new one.

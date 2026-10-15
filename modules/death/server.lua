@@ -137,6 +137,24 @@ FN_DEATH.Reviver = function()
     return false
 end
 
+local Ambulances = { 'esx_ambulancejob', 'qb-ambulancejob', 'qbx_medical', 'wasabi_ambulance', 'ars_ambulancejob', 'ak47_ambulancejob' }
+
+for _, resource in ipairs(Ambulances) do FN_KNOWN[resource] = true end
+FN_KNOWN['qbx_ambulancejob'] = true
+
+FN_DEATH.Ambulances = function()
+    local out = {}
+    local caller = GetInvokingResource()
+    if Provider and Provider.resource ~= caller then out[1] = Provider.resource end
+    if FN_BRIDGE.Callable(FN_BRIDGE.Setting('revive', caller)) then out[#out + 1] = 'hook' end
+    for _, resource in ipairs(Ambulances) do
+        local state = GetResourceState(resource)
+        if state == 'started' or state == 'starting' then out[#out + 1] = resource end
+    end
+
+    return out
+end
+
 FN_DEATH.Provide = function(impl)
     local resource = GetInvokingResource()
     if not resource then return false end

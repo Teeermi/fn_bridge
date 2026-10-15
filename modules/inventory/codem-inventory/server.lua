@@ -9,6 +9,12 @@ FN_INVENTORY.GetPlayerItems = function(playerId)
     return FN_BRIDGE.NormalizeItems(exports['codem-inventory']:GetInventory(player.identifier, playerId))
 end
 
+FN_INVENTORY.CanCarry = function(playerId, itemName, count)
+    local ok, result = pcall(function() return exports['codem-inventory']:CanCarryItem(playerId, itemName, count or 1) end)
+
+    return not ok or result ~= false
+end
+
 FN_INVENTORY.AddItem = function(playerId, itemName, count, metadata, slot)
     return exports['codem-inventory']:AddItem(playerId, itemName, count, slot, metadata) and true or false
 end

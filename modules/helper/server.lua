@@ -2,6 +2,8 @@ FN_HELPER = {
     Players = {}
 }
 
+for _, resource in ipairs({ 'LegacyFuel', 'cdn-fuel', 'ps-fuel', 'lj-fuel', 'okokGasStation', 'ti_fuel', 'x-fuel', 'ox_fuel', 'qbx_seatbelt', 'qb-smallresources', 'esx_cruisecontrol' }) do FN_KNOWN[resource] = true end
+
 local savePrint = print
 FN_HELPER.print = function(...)
     local dateTime = os.date("%H:%M:%S", os.time())

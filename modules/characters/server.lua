@@ -64,6 +64,16 @@ end)
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(s) loaded[s] = nil end)
 AddEventHandler('playerDropped', function() loaded[source] = nil end)
 
+local function LoggedOut(payload)
+    local playerId = type(payload) == 'table' and (payload.source or type(payload.PlayerData) == 'table' and payload.PlayerData.source) or payload
+    playerId = tonumber(playerId)
+    if playerId and playerId > 0 then TriggerEvent('fn_bridge:characterLogout', playerId) end
+end
+
+for _, event in ipairs({ 'ox:playerLogout', 'QBCore:Server:OnPlayerUnload', 'qbx_core:server:playerLoggedOut', 'esx:playerLogout' }) do
+    AddEventHandler(event, LoggedOut)
+end
+
 local hasColumn = {}
 local function column(t, c)
     local k = t .. '.' .. c
@@ -539,7 +549,33 @@ end
 
 FN_CHARACTERS.Supported = function() return IMPL[FN_BRIDGE.frameworkName or ''] ~= nil end
 FN_CHARACTERS.Owner = function(src) return call('license', src) end
-FN_CHARACTERS.List = function(src, owner) return call('list', src, owner) or {} end
+FN_CHARACTERS.List = function(src, owner)
+    local list = call('list', src, owner) or {}
+    local hook = FN_BRIDGE.Setting('appearance')
+    local skin = type(hook) == 'table' and hook.skin
+    if not FN_BRIDGE.Callable(skin) then return list end
+
+    for _, c in ipairs(list) do
+        local ok, s = pcall(skin, c.key)
+        if ok and type(s) == 'table' and s.skin then c.skin = { model = s.model, data = s.skin } end
+    end
+
+    return list
+end
+
+FN_CHARACTERS.Spawns = function(src, key, isNew)
+    local hook = FN_BRIDGE.Setting('spawns')
+    if not FN_BRIDGE.Callable(hook) then return {}, false end
+
+    local ok, list, exclusive = pcall(hook, src, key, isNew)
+    if not ok then
+        print(('^1[fn_bridge] spawns hook: %s^0'):format(tostring(list)))
+        return {}, false
+    end
+
+    return type(list) == 'table' and list or {}, exclusive == true
+end
+
 FN_CHARACTERS.DeferredLogin = function() return FN_BRIDGE.frameworkName == 'ox' end
 FN_CHARACTERS.Login = function(src, key) return call('login', src, key) == true end
 FN_CHARACTERS.Create = function(src, num, data) return call('create', src, num, data) end

@@ -54,6 +54,21 @@ D.List = function()
     return out
 end
 
+D.Get = function(id)
+    if type(id) ~= 'string' and type(id) ~= 'number' then return nil end
+
+    local hook = Hook('isLocked')
+    if hook then
+        local ok, locked = pcall(hook, id)
+        return ok and locked ~= nil and { id = id, locked = locked == true } or nil
+    end
+    if not Started('ox_doorlock') then return nil end
+
+    local door = OxDoor(id)
+
+    return type(door) == 'table' and { id = door.id, name = door.name, locked = door.state == 1, coords = door.coords } or nil
+end
+
 D.IsLocked = function(id)
     local hook = Hook('isLocked')
     if hook then return Call(hook, id) == true end

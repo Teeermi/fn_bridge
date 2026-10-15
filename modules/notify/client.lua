@@ -11,7 +11,7 @@ FN_NOTIFY.notifiers = {
         return FN_FRAMEWORK.Notify(message, messageType, time)
     end,
     ox = function(message, messageType)
-        return lib.notify({ description = message, type = messageType, position = 'top-right' })
+        return lib.notify({ description = message, type = FN_NOTIFY.informTypes[messageType] or messageType, position = 'top-right' })
     end,
     mythic = function(message, messageType, time)
         return exports['mythic_notify']:SendAlert(FN_NOTIFY.informTypes[messageType] or 'inform', message, time)
@@ -28,14 +28,14 @@ FN_NOTIFY.notifiers = {
     vms_notifyv2 = function(message, messageType, time)
         return exports['vms_notifyv2']:Notification({ type = messageType, description = message, duration = time })
     end,
-    wasabi_uikit = function(message, messageType)
-        return exports['wasabi_uikit']:Notification({ title = message, type = messageType })
+    wasabi_uikit = function(message, messageType, time)
+        return exports['wasabi_uikit']:Notification({ title = message, type = messageType, time = time })
     end,
     wasabi = function(message, messageType, time)
-        return exports['wasabi_notify']:notify(messageType, message, time, messageType)
+        return exports['wasabi_notify']:notify(nil, message, time, messageType)
     end,
     lation_ui = function(message, messageType)
-        return exports['lation_ui']:notify({ message = message, type = FN_NOTIFY.informTypes[messageType] or 'inform' })
+        return exports['lation_ui']:notify({ message = message, type = messageType })
     end,
     brutal_notify = function(message, messageType, time)
         return exports['brutal_notify']:SendAlert('Brutal Notify', message, time, messageType)
@@ -100,6 +100,7 @@ local function Own(key, resource)
 end
 
 local function Notify(resource, message, messageType, time)
+    if messageType == 'inform' then messageType = 'info' end
     TriggerEvent('fn_bridge/client/notified', message, messageType or 'info', resource or GetInvokingResource())
     local notifier = Own('notify', resource) or FN_NOTIFY.notifiers[FN_BRIDGE.notifyName]
     if not notifier then return false end

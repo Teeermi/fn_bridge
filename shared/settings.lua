@@ -22,6 +22,7 @@ Config = {
     Postal = Convar('postal', 'nearest-postal'),
     Dispatch = Convar('dispatch', 'auto'),
     Phone = Convar('phone', 'auto'),
+    Voice = Convar('voice', 'auto'),
     AdminGroups = admins,
     Counter = {
         dutyAware = false,

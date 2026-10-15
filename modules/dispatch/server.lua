@@ -16,7 +16,7 @@ local Server = {
         exports['lb-tablet']:AddDispatch({ priority = priority, code = alert.code, title = alert.title, description = alert.message, location = { label = alert.street or '', coords = vector2(alert.coords.x, alert.coords.y) }, time = 600, job = alert.jobs[1] })
     end,
     ['cd_dispatch'] = function(_, alert)
-        TriggerEvent('cd_dispatch:AddNotification', { job_table = alert.jobs, coords = alert.coords, title = alert.title, message = alert.message, flash = 0, unique_id = tostring(math.random(1e9)), sound = 1, blip = { sprite = alert.sprite, scale = 1.2, colour = alert.color, flashes = true, text = alert.title, time = 5, radius = 0 } })
+        TriggerClientEvent('cd_dispatch:AddNotification', -1, { job_table = alert.jobs, coords = alert.coords, title = alert.title, message = alert.message, flash = alert.priority == 1 and 1 or 0, unique_id = tostring(math.random(1e9)), sound = 1, blip = { sprite = alert.sprite, scale = 1.2, colour = alert.color, flashes = true, text = alert.title, time = 5, radius = 0 } })
     end,
     ['redutzu-mdt'] = function(_, alert)
         TriggerEvent('redutzu-mdt:server:addDispatchToMDT', { code = alert.code, title = alert.message, street = alert.street or '', duration = 600000, coords = alert.coords })
@@ -36,15 +36,15 @@ local function Text(value, max, default)
     return value:sub(1, max)
 end
 
-FN_DISPATCH.Name = function()
+FN_DISPATCH.Name = function(skip)
     if FN_BRIDGE.Callable(FN_BRIDGE.Setting('dispatch')) then return 'hook' end
 
     local forced = Config.Dispatch
     if forced == 'none' then return false end
-    if forced ~= 'auto' then return Started(forced) and forced or false end
+    if forced ~= 'auto' then return forced ~= skip and Started(forced) and forced or false end
 
     for _, resource in ipairs(Order) do
-        if Started(resource) then return resource end
+        if resource ~= skip and Started(resource) then return resource end
     end
 
     return false
@@ -52,7 +52,7 @@ end
 
 FN_DISPATCH.Send = function(playerId, alert)
     playerId = tonumber(playerId)
-    local resource = FN_DISPATCH.Name()
+    local resource = FN_DISPATCH.Name(GetInvokingResource())
     if not resource or not playerId or type(alert) ~= 'table' then return false end
 
     local ped = GetPlayerPed(playerId)

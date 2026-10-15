@@ -184,3 +184,161 @@ FN_PHONE.Message = function(from, to, text)
 
     return Call(send, from, to, text) == true and resource or false
 end
+
+local OwnNumbers = { 'gksphone', 'qs-smartphone', 'qs-smartphone-pro', 'yseries', 'okokPhone', 'roadphone', 'high_phone', 'high-phone', '17mov_Phone', 'jpr-phonesystem' }
+
+
+local function Reason(why)
+    why = type(why) == 'string' and why:gsub('^phone_', '') or 'failed'
+    return why ~= '' and why or 'failed'
+end
+
+local FrameworkNumbers = {
+    name = 'framework',
+    ready = function() return FN_BRIDGE.FRAMEWORK.Supports('phoneNumber') == true end,
+    get = function(playerId) return FN_BRIDGE.FRAMEWORK.GetPhoneNumber(playerId) end,
+    taken = function(number) return FN_BRIDGE.FRAMEWORK.IsPhoneNumberTaken(number) == true end,
+    set = function(playerId, number) return FN_BRIDGE.FRAMEWORK.SetPhoneNumber(playerId, number) == true end,
+}
+
+local Numbering = {
+    ['fn_phone'] = {
+        ready = function() return exports['fn_phone']:simNumbers() == true end,
+        get = function(playerId) return exports['fn_phone']:getNumber(playerId) end,
+        taken = function(number) return exports['fn_phone']:numberTaken(number) == true end,
+        set = function(playerId, number) return exports['fn_phone']:giveSim(playerId, number) end,
+    },
+    ['lb-phone'] = {
+        relog = true,
+        ready = function() return not FN_BRIDGE.IsFramework('standalone') and FN_DB.HasTable('phone_phones') end,
+        get = function(playerId) return exports['lb-phone']:GetEquippedPhoneNumber(playerId) end,
+        taken = function(number) return (MySQL.scalar.await('SELECT COUNT(*) FROM phone_phones WHERE phone_number = ?', { number }) or 0) > 0 end,
+        check = function(playerId, current)
+            if not current then return false, 'nophone' end
+            local owner = MySQL.scalar.await('SELECT id FROM phone_phones WHERE phone_number = ?', { current })
+            local id = FN_BRIDGE.FRAMEWORK.GetIdentifier(playerId)
+            if owner == nil or id == nil or tostring(owner) ~= tostring(id) then return false, 'unsupported' end
+            return true
+        end,
+        set = function(_, number, old)
+            local columns = MySQL.query.await([[SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE 'phone\_%' AND DATA_TYPE IN ('varchar', 'char') AND CHARACTER_MAXIMUM_LENGTH BETWEEN ? AND 32]], { math.max(#old, #number) }) or {}
+            local queries = {}
+            for _, col in ipairs(columns) do
+                queries[#queries + 1] = { query = ('UPDATE `%s` SET `%s` = ? WHERE `%s` = ?'):format(col.t, col.c, col.c), values = { number, old } }
+            end
+            if #queries == 0 then return false, 'failed' end
+            return MySQL.transaction.await(queries) == true
+        end,
+    },
+    ['npwd'] = {
+        relog = function() return not FN_BRIDGE.IsFramework('qb') and not FN_BRIDGE.IsFramework('qbx') end,
+        ready = FrameworkNumbers.ready,
+        get = FrameworkNumbers.get,
+        taken = FrameworkNumbers.taken,
+        set = function(playerId, number)
+            if not FrameworkNumbers.set(playerId, number) then return false end
+            local player = (FN_BRIDGE.IsFramework('qb') or FN_BRIDGE.IsFramework('qbx')) and FN_FRAMEWORK.RawPlayer(playerId)
+            local data = type(player) == 'table' and player.PlayerData
+            if type(data) == 'table' and type(data.charinfo) == 'table' then
+                local ok, why = pcall(function()
+                    exports['npwd']:unloadPlayer(playerId)
+                    exports['npwd']:newPlayer({ source = playerId, identifier = data.citizenid, phoneNumber = number, firstname = data.charinfo.firstname, lastname = data.charinfo.lastname })
+                end)
+                if not ok then print(('^3[fn_bridge] npwd takes the new number on the next join: %s^0'):format(tostring(why))) end
+            end
+            return true
+        end,
+    },
+}
+
+local function Numbers()
+    local hook = FN_BRIDGE.Setting('phoneNumber')
+    if type(hook) == 'table' and FN_BRIDGE.Callable(hook.set) then
+        return {
+            name = 'hook', relog = hook.relog == true,
+            ready = function() return true end,
+            get = FN_BRIDGE.Callable(hook.get) and hook.get or FN_PHONE.Number,
+            taken = FN_BRIDGE.Callable(hook.taken) and hook.taken or FrameworkNumbers.taken,
+            check = FN_BRIDGE.Callable(hook.check) and hook.check or nil,
+            set = hook.set,
+        }
+    end
+
+    local resource = FN_PHONE.Name()
+    if resource and Numbering[resource] then
+        local n = Numbering[resource]
+        n.name = resource
+        return n
+    end
+    if Config.Phone ~= 'none' then
+        for _, own in ipairs(OwnNumbers) do
+            if Started(own) then return nil, own end
+        end
+    end
+
+    return FrameworkNumbers
+end
+
+FN_PHONE.Numbers = function()
+    local n, unsupported = Numbers()
+    if not n then return false, 'unsupported', unsupported end
+
+    local ok, ready = pcall(n.ready)
+    if not ok or not ready then return false, 'none', n.name end
+
+    local relog = n.relog
+    if FN_BRIDGE.Callable(relog) then relog = relog() end
+
+    return { name = n.name, relog = relog == true }
+end
+
+FN_PHONE.NumberTaken = function(number)
+    local n = Numbers()
+    number = (type(number) == 'string' or type(number) == 'number') and tostring(number) or nil
+    if not n or not number or number == '' then return true end
+
+    local ok, taken = pcall(n.taken, number)
+
+    return not ok or taken ~= false
+end
+
+FN_PHONE.CanSetNumber = function(playerId)
+    playerId = Online(playerId)
+    if not playerId then return false, 'offline' end
+
+    local ready, why = FN_PHONE.Numbers()
+    if not ready then return false, why end
+
+    local n = Numbers()
+    if not n.check then return true end
+
+    local okGet, current = pcall(n.get, playerId)
+    local ok, done, reason = pcall(n.check, playerId, okGet and current or nil)
+    if not ok then return false, 'failed' end
+
+    return done == true, done ~= true and Reason(reason) or nil
+end
+
+FN_PHONE.SetNumber = function(playerId, number)
+    playerId = Online(playerId)
+    number = (type(number) == 'string' or type(number) == 'number') and tostring(number):gsub('[^%d]', '') or ''
+    if not playerId then return false, 'offline' end
+    if number == '' or #number > 20 then return false, 'invalid' end
+
+    local can, why = FN_PHONE.CanSetNumber(playerId)
+    if not can then return false, why end
+    if FN_PHONE.NumberTaken(number) then return false, 'taken' end
+
+    local n = Numbers()
+    local okGet, old = pcall(n.get, playerId)
+    old = okGet and old ~= nil and tostring(old) or ''
+    local ok, done, reason = pcall(n.set, playerId, number, old)
+    if not ok then
+        print(('^1[fn_bridge] phone number %s -> %s (%s): %s^0'):format(old, number, n.name, tostring(done)))
+        return false, 'failed'
+    end
+    if done ~= true then return false, Reason(reason) end
+
+    return true, old
+end

@@ -336,10 +336,10 @@ FN_BRIDGE.VehiclesContract = {
 }
 
 FN_BRIDGE.ServerOnly = {
-    JAIL = { 'Name', 'Send', 'Release', 'Get', 'CommunityService' },
+    JAIL = { 'Name', 'Send', 'Release', 'Get', 'GetOffline', 'CommunityService' },
     BILLING = { 'Name', 'Send', 'List', 'Pay', 'Provide' },
     STAFF = { 'Host', 'Call' },
-    DOORS = { 'Name', 'List', 'IsLocked', 'SetLocked', 'Allow' },
+    DOORS = { 'Name', 'List', 'Get', 'IsLocked', 'SetLocked', 'Allow' },
     HTTP = { 'Header', 'Tunnel', 'Origin' },
 }
 
@@ -348,7 +348,7 @@ FN_BRIDGE.PickerContract = { 'Start', 'Await', 'Stop', 'IsActive' }
 FN_BRIDGE.KeysContract = { 'Give', 'Remove' }
 
 FN_BRIDGE.CharactersContract = {
-    server = { 'Supported', 'Owner', 'List', 'DeferredLogin', 'TakeOver', 'Login', 'Create', 'Delete', 'Logout', 'IsLoaded', 'StarterItems', 'Money', 'Dossier', 'HandsOver', 'Slots' },
+    server = { 'Supported', 'Owner', 'List', 'Spawns', 'DeferredLogin', 'TakeOver', 'Login', 'Create', 'Delete', 'Logout', 'IsLoaded', 'StarterItems', 'Money', 'Dossier', 'HandsOver', 'Slots' },
     client = { 'IsLoggedIn', 'Prepare', 'LoadingOff', 'Spawn', 'Loaded', 'Done' },
 }
 

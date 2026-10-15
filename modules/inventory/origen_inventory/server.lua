@@ -8,6 +8,12 @@ FN_INVENTORY.GetPlayerItems = function(playerId)
     return FN_BRIDGE.NormalizeItems(ok and type(inventory) == 'table' and inventory.inventory or {})
 end
 
+FN_INVENTORY.CanCarry = function(playerId, itemName, count)
+    local ok, result = pcall(function() return exports['origen_inventory']:canCarryItem(playerId, itemName, count or 1) end)
+
+    return not ok or result ~= false
+end
+
 FN_INVENTORY.AddItem = function(playerId, itemName, count, metadata, slot)
     return exports.origen_inventory:addItem(playerId, itemName, count or 1, metadata, slot, false) and true or false
 end

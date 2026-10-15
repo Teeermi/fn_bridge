@@ -21,6 +21,10 @@ local Categories = {
     { hook = 'doors', file = 'server', words = { 'door' } },
     { hook = 'interact', file = 'server', words = { 'police', 'cuff' } },
     { hook = 'appearance', file = 'client', words = { 'appearance', 'clothing', 'skin' } },
+    { hook = 'voice', file = 'server', words = { 'voice', 'voip' } },
+    { hook = 'phoneNumber', file = 'server', words = { 'phone' } },
+    { hook = 'fuel', file = 'client', words = { 'fuel', 'gasstation' } },
+    { hook = 'spawns', file = 'server', words = { 'motel' } },
 }
 
 local Libraries = { ox_lib = true, oxmysql = true, ['mysql-async'] = true, es_extended = true, ['qb-core'] = true, qbx_core = true, ox_core = true, vrp = true, fn_bridge = true, esx_notify = true, esx_textui = true }
@@ -130,12 +134,15 @@ local function Choices(client)
     local gangs = FN_FRAMEWORK.Supports('gangs')
     Hooked('gangs', 'gang', gangs and 'framework' or 'none', not gangs and 'no gangs in this framework' or nil)
     Hooked('clothing', 'appearance', FN_APPEARANCE.Name() or 'natives', FN_APPEARANCE.Name() and 'found running' or 'none found, outfits use game natives')
-    Line('radio', FN_VOICE.Name() or 'none', FN_VOICE.Name() and 'found running' or 'install pma-voice or saltychat')
+    Hooked('voice', 'voice', FN_VOICE.Name() or 'none', FN_VOICE.Name() and 'found running' or 'none found, no calls or radio')
+    local numbers, blocked, phone = FN_PHONE.Numbers()
+    Hooked('numbers', 'phoneNumber', numbers and numbers.name or (phone or 'none'), numbers and 'phone numbers can change' or (blocked == 'unsupported' and 'keeps its own numbers, add the phoneNumber hook' or 'this phone setup does not let scripts change numbers'))
+    Hooked('fuel', 'fuel', 'auto', 'state bag fuel, a known fuel script or the game value')
     local hosts = {}
     for _, entry in ipairs(FN_BRIDGE.ProvidersOf('staff')) do hosts[#hosts + 1] = entry.resource end
     Line('staff', #hosts > 0 and table.concat(hosts, ', ') or 'none', #hosts > 0 and 'job hosts' or 'fn_phone keeps its own work apps')
 
-    local shown = { notify = true, showHelp = true, revive = true, dispatch = true, housing = true, garage = true, name = true, job = true, phone = true, jail = true, billing = true, doors = true, interact = true, gang = true, appearance = true, staff = true }
+    local shown = { notify = true, showHelp = true, revive = true, dispatch = true, housing = true, garage = true, name = true, job = true, phone = true, jail = true, billing = true, doors = true, interact = true, gang = true, appearance = true, staff = true, voice = true, phoneNumber = true, fuel = true }
     local extra = {}
     for key, by in pairs(FN_BRIDGE.Providers()) do
         if not shown[key] then extra[#extra + 1] = key .. ' (' .. by .. ')' end
@@ -254,8 +261,26 @@ end)]] },
     { 'server', 'dispatch', [[exports.fn_bridge:Provide('dispatch', function(playerId, alert)
     TriggerClientEvent('fn_bridge_custom:dispatch', playerId, alert)
 end)]] },
-    { 'server', 'housing', [[exports.fn_bridge:Provide('housing', function(identifier, playerId)
-    return exports.my_housing:GetOwned(identifier)
+    { 'server', 'housing', [[exports.fn_bridge:Provide('housing', {
+    list = function(identifier, playerId) return exports.my_housing:GetOwned(identifier) end,
+    isLocked = function(homeId) return exports.my_housing:IsLocked(homeId) end,
+    setLocked = function(homeId, locked) return exports.my_housing:SetLocked(homeId, locked) end,
+    forSale = function() return exports.my_housing:ForSale() end,
+})]] },
+    { 'server', 'voice', [[exports.fn_bridge:Provide('voice', {
+    call = function(playerId, callId) exports.my_voice:SetCall(playerId, callId or 0) end,
+    radio = function(playerId, channel) exports.my_voice:SetRadio(playerId, channel) end,
+})]] },
+    { 'server', 'phoneNumber', [[exports.fn_bridge:Provide('phoneNumber', {
+    get = function(playerId) return exports.my_phone:GetNumber(playerId) end,
+    taken = function(number) return exports.my_phone:NumberExists(number) end,
+    set = function(playerId, number, old) return exports.my_phone:ChangeNumber(playerId, number) end,
+})]] },
+    { 'server', 'appearance', [[exports.fn_bridge:Provide('appearance', {
+    skin = function(identifier) return exports.my_clothing:GetSkin(identifier) end,
+})]] },
+    { 'server', 'spawns', [[exports.fn_bridge:Provide('spawns', function(playerId, identifier, isNew)
+    return exports.my_motel:SpawnPoints(identifier), false
 end)]] },
     { 'server', 'garage', [[exports.fn_bridge:Provide('garage', {
     esx = { parkedColumn = 'state', state = 'stored', parkedOut = 'out', garageColumn = 'parking' },
@@ -294,7 +319,12 @@ end)]] },
     { 'client', 'appearance', [[exports.fn_bridge:Provide('appearance', {
     set = function(outfit) return exports.my_clothing:Wear(outfit) end,
     restore = function() return exports.my_clothing:Reload() end,
+    apply = function(ped, data) exports.my_clothing:ApplyToPed(ped, data) end,
+    creator = function(sex) exports.my_clothing:OpenCreator(sex) end,
 })]] },
+    { 'client', 'fuel', [[exports.fn_bridge:Provide('fuel', function(vehicle)
+    return exports.my_fuel:GetFuel(vehicle)
+end)]] },
     { 'client', 'interact', [[exports.fn_bridge:Provide('interact', {
     isCuffed = function() return exports.my_police:IsCuffed() end,
 })]] },

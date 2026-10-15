@@ -544,6 +544,58 @@ local function TierA()
         return type(running) == 'table' and type(none) == 'table' and #none == 0 and #H.List(nil, nil) == 0, table.concat(running, ', ')
     end)
 
+    Check('HOUSING give guards', function()
+        local H = FN_BRIDGE.HOUSING
+        local g = H.Giver()
+        local _, bad = H.Give(65000, 'nope')
+        local _, away = H.Give(65000, { house = 'fnb_nohouse' })
+        local ok = (g == false and bad == 'none') or (type(g) == 'table' and bad == 'invalid' and away == (g.offline and 'identifier' or 'offline'))
+
+        return ok, g and ('%s house %s starter %s offline %s'):format(g.name, g.house, g.starter, g.offline) or 'none'
+    end)
+
+    Check('HOUSING locks, sale list, starters and resume without a player', function()
+        local H = FN_BRIDGE.HOUSING
+        local sale, starters = H.ForSale(), H.Starters()
+        local hooked = FN_BRIDGE.Provider('housing') ~= nil
+        local guards = H.IsLocked('fnbnone:x') == nil and H.SetLocked('fnbnone:x', true) == nil and H.IsLocked(nil) == nil
+            and (hooked or H.Resume({}) == nil) and H.Resume(nil) == nil and H.Prepare('fnbnone:x', nil) == false and H.Prepare('fnbnone:x', 'fnb_nobody') == true
+
+        return guards and type(sale) == 'table' and type(starters) == 'table', ('%d for sale, %d starters'):format(#sale, #starters)
+    end)
+
+    Check('VOICE call groups, mute and radio guards', function()
+        local V = FN_BRIDGE.VOICE
+        local ok, err = FN_VOICE_PROBE()
+        local guards = V.SetRadio(65000, 1) == false and V.GetRadio(65000) == false and V.RadioCount(0) == 0
+            and V.GetCall(65000) == nil and V.CallMuted(65000) == false and V.MuteCall(65000, true) == false
+
+        return ok and guards, ok and ('%s, mumble %s'):format(tostring(V.Name()), tostring(V.Mumble())) or err
+    end)
+
+    Check('PHONE number changes', function()
+        local P = FN_BRIDGE.PHONE
+        local numbers, why, by = P.Numbers()
+        local guards = P.NumberTaken('') == true and select(2, P.SetNumber(65000, '5550000')) == 'offline' and select(2, P.CanSetNumber(65000)) == 'offline'
+
+        return guards and (type(numbers) == 'table' or why == 'none' or why == 'unsupported'), numbers and ('%s relog %s'):format(numbers.name, numbers.relog) or ('%s %s'):format(why, tostring(by))
+    end)
+
+    Check('JAIL offline, DOORS lookup and ambulance list', function()
+        local jail = FN_BRIDGE.JAIL.GetOffline('fnb_nobody') == false and FN_BRIDGE.JAIL.GetOffline(nil) == false
+        local doors = FN_BRIDGE.DOORS.Get('fnb_nodoor') == nil and FN_BRIDGE.DOORS.Get(nil) == nil
+        local amb = FN_BRIDGE.DEATH.Ambulances()
+
+        return jail and doors and type(amb) == 'table', #amb > 0 and table.concat(amb, ', ') or 'no ambulance script'
+    end)
+
+    Check('DISPATCH skips the sender', function()
+        local D = FN_BRIDGE.DISPATCH
+        local first = D.Name()
+
+        return first == false or first == 'hook' or D.Name(first) ~= first, ('%s, then %s'):format(tostring(first), tostring(first and D.Name(first)))
+    end)
+
     Check('MEDIA guards and spool', function()
         local M = FN_BRIDGE.MEDIA
         local urls = M.IsUrl('https://r2.fivemanage.com/a/b.webp') and not M.IsUrl('http://x.y/a.webp') and not M.IsUrl('https://x.y/a b')
@@ -568,21 +620,49 @@ local function TierA()
         local B = FN_BRIDGE
         local account, dirty = B.SOCIETY.GangAccount('fnbgang')
         local bills = B.BILLING.List('fnb_billed')
-        local hooked19 = B.STAFF.Host('fnbprobejob') == 'fnb_hooktest' and B.STAFF.Host('police') == nil
-            and (FRAMEWORK.GetInsurance('fnb_insured') or {}).plan == 'gold' and B.BILLING.Name() == 'fnb_hooktest'
-            and B.BILLING.Send(nil, { to = 'x', amount = 5 }) == 'fnb_hooktest:7' and (bills[1] or {}).id == 'fnb_hooktest:7'
-            and B.BILLING.Pay(1, 'fnb_hooktest:7') == true and B.JAIL.Name() == 'hook' and account == 'fnb_gang_account' and dirty == true
-            and B.DOORS.Name() == 'hook' and B.DOORS.IsLocked('fnbdoor') and #B.DOORS.List() == 1 and B.INTERACT.Has('cuff') == 'hook'
+        local checks = {
+            { 'staff', function() return B.STAFF.Host('fnbprobejob') == 'fnb_hooktest' and B.STAFF.Host('police') == nil end },
+            { 'insurance', function() return (FRAMEWORK.GetInsurance('fnb_insured') or {}).plan == 'gold' end },
+            { 'billing', function()
+                return B.BILLING.Name() == 'fnb_hooktest' and B.BILLING.Send(nil, { to = 'x', amount = 5 }) == 'fnb_hooktest:7'
+                    and (bills[1] or {}).id == 'fnb_hooktest:7' and B.BILLING.Pay(1, 'fnb_hooktest:7') == true
+            end },
+            { 'jail', function() return B.JAIL.Name() == 'hook' and (B.JAIL.GetOffline('fnb_jailed') or {}).minutes == 9 and B.JAIL.GetOffline('fnb_nobody') == false end },
+            { 'gangAccount', function() return account == 'fnb_gang_account' and dirty == true end },
+            { 'doors', function()
+                return B.DOORS.Name() == 'hook' and B.DOORS.IsLocked('fnbdoor') and #B.DOORS.List() == 1
+                    and (B.DOORS.Get('fnbdoor') or {}).locked == true and B.DOORS.Get('fnb_nodoor') == nil
+            end },
+            { 'interact', function() return B.INTERACT.Has('cuff') == 'hook' end },
+            { 'voice', function() return B.VOICE.Name() == 'hook' and B.VOICE.Mumble() == true and B.VOICE.RadioCount(7) == 3 end },
+            { 'housing', function()
+                return B.HOUSING.IsLocked('fnbhome:1') == true and B.HOUSING.SetLocked('fnbhome:1', false) == false
+                    and (B.HOUSING.ForSale()[1] or {}).id == 'hook:fnbsale' and (B.HOUSING.Starters()[1] or {}).id == 'fnbapt'
+                    and (B.HOUSING.Resume({ key = 'x' }) or {}).event == 'fnb:enter'
+            end },
+            { 'phoneNumber', function() return (B.PHONE.Numbers() or {}).name == 'hook' and B.PHONE.NumberTaken('5550111') == true and B.PHONE.NumberTaken('5550112') == false end },
+            { 'spawns', function()
+                if not B.CHARACTERS.Supported() then return true end
+                local list, exclusive = B.CHARACTERS.Spawns(0, 'fnb_spawn', false)
+                return #list == 1 and list[1].id == 'motel' and exclusive == true and #B.CHARACTERS.Spawns(0, 'fnb_other', false) == 0
+            end },
+        }
+        local missed = {}
+        for _, c in ipairs(checks) do
+            local ok, yes = pcall(c[2])
+            if not ok or not yes then missed[#missed + 1] = c[1] end
+        end
+        local hooked19 = #missed == 0
         StopResource('fnb_hooktest')
         Wait(500)
 
         local released = FRAMEWORK.GetName(-7) ~= 'Hook Probe' and (FRAMEWORK.GetGang(-7) or {}).name ~= 'fnbprobe'
             and FN_BRIDGE.STAFF.Host('fnbprobejob') == nil and FN_BRIDGE.BILLING.Name() ~= 'fnb_hooktest'
-        for _, key in ipairs({ 'name', 'dispatch', 'garage', 'FRAMEWORK.GetGang', 'staff', 'billing', 'jail', 'doors', 'interact' }) do
+        for _, key in ipairs({ 'name', 'dispatch', 'garage', 'FRAMEWORK.GetGang', 'staff', 'billing', 'jail', 'doors', 'interact', 'voice', 'housing', 'phoneNumber', 'spawns' }) do
             released = released and FN_BRIDGE.Provider(key) ~= 'fnb_hooktest'
         end
 
-        return hooked and hooked19 and released, ('hooked %s 1.9 %s released %s'):format(hooked, hooked19, released)
+        return hooked and hooked19 and released, ('hooked %s, missed %s, released %s'):format(hooked, #missed > 0 and table.concat(missed, ' ') or 'none', released)
     end)
 
     Tier19(framework, create and one or nil)

@@ -101,8 +101,9 @@ exports.fn_bridge:Provide('revive', function(playerId)
 end)
 ```
 
-Hooks: `notify`, `showHelp`, `hideHelp`, `seatbelt` (client), `revive`, `name`, `job`, `phone`, `dispatch`, `housing`,
-`chat`, `garage`, `dirtyMoney` (server), and any API function by its full name (`FRAMEWORK.AddMoney`), which replaces it. fn_bridge updates never touch that resource. `fnb_doctor` in the console prints
+Hooks: every key in the table in [docs/ENGLISH/_INSTALL.md](docs/ENGLISH/_INSTALL.md) (`notify`, `revive`, `dispatch`,
+`housing`, `voice`, `appearance`, `fuel`, `spawns` and the rest), and any API function by its full name (`FRAMEWORK.AddMoney`,
+`INVENTORY.AddItem`), which replaces it. fn_bridge updates never touch that resource. `fnb_doctor` in the console prints
 the blocks your server is missing.
 
 ### `Config.Bridge`
@@ -138,8 +139,9 @@ Config.Bridge = {
 | `notify`, `showHelp`, `hideHelp` | not set | your own notify and text UI; client side, so the config must load on the client |
 | `chat` | not set | `chat(playerId, author, message, color)` on the server, for a chat without `chat:addMessage` |
 
-jg-advancedgarages and cd_garage columns (`in_garage`, `garage_id`, `impound`) need no setting. Inventories fn_bridge
-doesn't cover go through the script's own hook, e.g. `Config.Inventory = 'custom'` in fn_itemshop.
+jg-advancedgarages and cd_garage columns (`in_garage`, `garage_id`, `impound`) need no setting. An inventory fn_bridge
+has no adapter for is plugged in once in `fn_bridge_custom` with `INVENTORY.*` hooks (`AddItem`, `RemoveItem`,
+`GetItemCount`, `CanCarry`, `ItemExists`), and every script uses it.
 
 ## Supports
 
@@ -156,11 +158,18 @@ doesn't cover go through the script's own hook, e.g. `Config.Inventory = 'custom
 | Jail | xt-prison, qb-prison, pickle_prisons, esx_jail, esx-qalle-jail, esx_communityservice, your function |
 | Invoices | esx_billing, fn_business, your function |
 | Door locks | ox_doorlock, qb-doorlock, your function |
-| Clothing | illenium-appearance, fivem-appearance, qb-clothing, esx_skin, your function |
-| Radio | pma-voice, SaltyChat |
-| Phone | fn_phone, lb-phone, npwd, qb-phone |
+| Clothing | illenium-appearance, fivem-appearance, qb-clothing, esx_skin and skinchanger, your function |
+| Housing | qb-houses, qb-apartments, qbx_properties, ps-housing, esx_property, qs-housing, bcs_housing; handing out homes: bcs_housing, nolag_properties; your function |
+| Dispatch | fn_mdt, lb-tablet, ps-dispatch, cd_dispatch, qs-dispatch, tk_dispatch, fd_dispatch, wasabi_mdt, origen_police, bub-mdt, kartik-mdt, redutzu-mdt, piotreq_gpt, linden_outlawalert, emergencydispatch, your function |
+| Vehicle keys | qbx_vehiclekeys, qb-vehiclekeys, qs-vehiclekeys, Renewed-Vehiclekeys, MrNewbVehicleKeys, wasabi_carlock, mk_vehiclekeys, t1ger_keys, ak47_vehiclekeys, cd_garage, vehicles_keys, okokGarage, F_RealCarKeysSystem, mVehicle |
+| Fuel | the fuel state bag (ox_fuel and others), LegacyFuel, cdn-fuel, ps-fuel, lj-fuel, okokGasStation, ti_fuel, x-fuel, your function |
+| Revive | qbx_medical, qb-ambulancejob, esx_ambulancejob, your function |
+| Voice and radio | pma-voice, SaltyChat, YACA, mumble-voip, your function |
+| Phone | fn_phone, lb-phone, npwd, qb-phone; phone numbers in any other phone through your function |
 | Cuffs and escort | qb-policejob, qbx_police, esx_policejob, your function |
 | Multijob | Qbox, ps-multijob, your function |
+
+Adapters for paid scripts we don't own follow each vendor's public documentation and haven't been tested in game by us. If one misbehaves, a hook replaces it.
 
 If two resources of one kind run, the first in the list wins. QBox is checked before QBCore because QBox servers
 often keep a qb-core compatibility resource.

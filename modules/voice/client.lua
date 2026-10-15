@@ -75,9 +75,22 @@ local Salty = {
     end,
 }
 
+local Systems = { 'pma-voice', 'saltychat', 'yaca-voice', 'mumble-voip' }
+
+local function Hook(name)
+    local hook = FN_BRIDGE.Setting('voice')
+    local fn = type(hook) == 'table' and hook[name]
+    return FN_BRIDGE.Callable(fn) and fn or nil
+end
+
 FN_VOICE.Name = function()
-    if Started('pma-voice') then return 'pma-voice' end
-    if Started('saltychat') then return 'saltychat' end
+    if type(FN_BRIDGE.Setting('voice')) == 'table' then return 'hook' end
+    local forced = Config.Voice
+    if forced == 'none' then return false end
+    if forced ~= 'auto' then return Started(forced) and forced or false end
+    for _, resource in ipairs(Systems) do
+        if Started(resource) then return resource end
+    end
     return false
 end
 
@@ -137,6 +150,102 @@ FN_VOICE.SetRadio = function(channel)
     if name == 'pma-voice' then
         return pcall(function() exports['pma-voice']:setRadioChannel(channel) end)
     end
+    if name ~= 'saltychat' then return false end
 
     return pcall(function() exports.saltychat:SetRadioChannel(channel > 0 and tostring(channel) or '', true) end)
 end
+
+FN_VOICE.RadioEnabled = function(on)
+    local hook = Hook('radioEnabled')
+    if hook then return pcall(hook, on == true) end
+    if FN_VOICE.Name() ~= 'pma-voice' then return true end
+    return pcall(function() exports['pma-voice']:setVoiceProperty('radioEnabled', on == true) end)
+end
+
+local Talk = { ['pma-voice'] = 'radiotalk', saltychat = 'primaryRadio' }
+
+FN_VOICE.RadioTalk = function(on)
+    local hook = Hook('radioTalk')
+    if hook then return pcall(hook, on == true) end
+    local command = Talk[FN_VOICE.Name() or '']
+    if not command then return false end
+    ExecuteCommand((on and '+' or '-') .. command)
+    return true
+end
+
+AddEventHandler('pma-voice:setTalkingOnRadio', function(serverId, talking)
+    TriggerEvent('fn_bridge:radioTalking', tonumber(serverId), talking == true)
+end)
+
+AddEventHandler('pma-voice:radioActive', function(talking)
+    TriggerEvent('fn_bridge:radioTalking', nil, talking == true)
+end)
+
+RegisterNetEvent('fn_bridge:voice', function(key, value)
+    if (key == 'call' or key == 'radio') and Started('mumble-voip') then TriggerServerEvent('mumble:SetVoiceData', key, tonumber(value) or 0) end
+end)
+
+local hushed, applied, hushing = {}, {}, false
+local Near = 4.0
+
+local function Hush(serverId, on)
+    if Started('pma-voice') then
+        local ok, was = pcall(function() return exports['pma-voice']:isPlayerMuted(serverId) end)
+        if ok then
+            if on and not was then
+                exports['pma-voice']:toggleMutePlayer(serverId)
+                applied[serverId] = 'pma'
+            elseif not on and applied[serverId] then
+                if was then exports['pma-voice']:toggleMutePlayer(serverId) end
+                applied[serverId] = nil
+                pcall(function() exports['pma-voice']:setCallVolume(exports['pma-voice']:getCallVolume()) end)
+            end
+            return
+        end
+    end
+    MumbleSetVolumeOverrideByServerId(serverId, on and 0.0 or -1.0)
+    applied[serverId] = on and 'raw' or nil
+end
+
+local function HushLoop()
+    if hushing then return end
+    hushing = true
+    CreateThread(function()
+        while next(hushed) or next(applied) do
+            local me = GetEntityCoords(PlayerPedId())
+            for serverId in pairs(hushed) do
+                local player = GetPlayerFromServerId(serverId)
+                local ped = player ~= -1 and GetPlayerPed(player) or 0
+                local far = ped == 0 or #(GetEntityCoords(ped) - me) > Near
+                if far ~= (applied[serverId] ~= nil) then Hush(serverId, far) end
+            end
+            for serverId in pairs(applied) do
+                if not hushed[serverId] then Hush(serverId, false) end
+            end
+            local raw = false
+            for serverId, kind in pairs(applied) do
+                if kind == 'raw' then
+                    MumbleSetVolumeOverrideByServerId(serverId, 0.0)
+                    raw = true
+                end
+            end
+            Wait(raw and 0 or 250)
+        end
+        hushing = false
+    end)
+end
+
+RegisterNetEvent('fn_bridge:callmute', function(list)
+    hushed = {}
+    local me = GetPlayerServerId(PlayerId())
+    for _, serverId in ipairs(type(list) == 'table' and list or {}) do
+        serverId = math.tointeger(tonumber(serverId))
+        if serverId and serverId > 0 and serverId ~= me then hushed[serverId] = true end
+    end
+    HushLoop()
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    for serverId in pairs(applied) do Hush(serverId, false) end
+end)

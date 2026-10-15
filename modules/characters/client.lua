@@ -15,6 +15,18 @@ RegisterNetEvent('esx:playerLoaded', function(data, isNew, skin)
     esxLoaded = { data = data, isNew = isNew, skin = skin }
 end)
 
+local function Select()
+    TriggerEvent('fn_bridge:characterSelect')
+end
+
+RegisterNetEvent('qb-multicharacter:client:chooseChar', Select)
+RegisterNetEvent('qbx_core:client:playerLoggedOut', Select)
+RegisterNetEvent('ox:startCharacterSelect', Select)
+RegisterNetEvent('esx:onPlayerLogout', function()
+    Wait(1000)
+    Select()
+end)
+
 local function wake()
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, false)
@@ -131,7 +143,11 @@ end
 FN_CHARACTERS.Spawn = function(c, o)
     o = type(o) == 'table' and o or {}
     local ready = function() if FN_BRIDGE.Callable(o.ready) then o.ready() end end
-    local appearance = function(sex) return FN_BRIDGE.Callable(o.appearance) and o.appearance(sex) == true end
+    local appearance = function(sex)
+        if FN_BRIDGE.Callable(o.appearance) and o.appearance(sex) == true then return true end
+
+        return FN_APPEARANCE.Creator(sex)
+    end
     local f = fw()
     if f == 'ox' then
         teleport(c)
