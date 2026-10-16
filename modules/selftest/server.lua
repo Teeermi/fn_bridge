@@ -598,9 +598,9 @@ local function TierA()
 
     Check('MEDIA guards and spool', function()
         local M = FN_BRIDGE.MEDIA
-        local urls = M.IsUrl('https://r2.fivemanage.com/a/b.webp') and not M.IsUrl('http://x.y/a.webp') and not M.IsUrl('https://x.y/a b')
+        local urls = M.IsUrl('https://cdn.fivedock.dev/a/b.webp') and not M.IsUrl('http://x.y/a.webp') and not M.IsUrl('https://x.y/a b')
             and not M.IsUrl('https://x.y/a")') and not M.IsUrl('data:image/webp;base64,AA') and not M.IsUrl('javascript:alert(1)')
-        local missing = M.Missing({ provider = 'fivemanage', token = '' })
+        local missing = M.Missing({ token = '' })
         local guards = M.Upload('not an image', {}) == false and M.Capture(65000, {}) == false and M.Delete({ '../x' }, { token = 'x' }) == 0
         local resource = FN_BRIDGE.resourceName
         local path = exports[resource]:spool('fnbprobe.txt', 'Zm5fYnJpZGdl')

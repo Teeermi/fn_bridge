@@ -14,7 +14,10 @@ and Cloudflare absorbs floods aimed at it. You need a free Cloudflare account an
 1. In the Cloudflare dashboard open Networking → Tunnels → Create a tunnel, give it a name and run the install
    command it shows on the machine that runs FXServer. There are commands for Windows, Linux and Docker.
 2. In the tunnel's Routes tab choose Add route → Published application. Pick a subdomain such as `phone`, your domain,
-   and set the service URL to `http://localhost:30120` (your game port).
+   and set the service URL to `http://localhost:30120` (your game port). If `http://127.0.0.1:30120/info.json` doesn't
+   load on that machine, `endpoint_add_tcp` binds the server to its public IP: use `http://<public ip>:30120` and
+   put the same IP in step 3 instead of `on`. If Cloudflare says it could not create the DNS record, add a proxied
+   `CNAME` in DNS → Records from the subdomain to `<tunnel id>.cfargotunnel.com`.
 3. Add this line to `server.cfg`:
 
 ```cfg
@@ -33,6 +36,9 @@ rate limits and lockouts hit only the person who earned them.
 | `off` (default) | Scripts answer anyone and ignore forwarded addresses |
 | `on` | Scripts answer only requests from this machine, which is where the tunnel connects from |
 | `10.0.0.5 10.0.0.6` | The same, plus the listed addresses. Use it when the tunnel or proxy runs on another machine |
+
+A 502 from the tunnel address means the tunnel can't reach the service URL. A 403 means fn_bridge doesn't trust the
+address the tunnel connects from, which is the public IP when the route points at it.
 
 Requests from this machine are always allowed, so self tests run from the console keep working. The value is read on
 every request, which means `set fn_bridge:tunnel on` typed in the console works without a restart.

@@ -108,7 +108,7 @@ Scripts with photos (fn_multichar, fn_pausemenu) take the screenshot on the serv
 set fn_bridge:upload_token "your-fivedock-token"
 ```
 
-Use `set`, never `setr`: `setr` sends the value to every player. A token in a script's own server config wins over this one. With a token, deleting a photo in a script also deletes the file on fivedock. Already on Fivemanage? Add `set fn_bridge:upload "fivemanage"` and use your Fivemanage token.
+Use `set`, never `setr`: `setr` sends the value to every player. A token in a script's own server config wins over this one. With a token, deleting a photo in a script also deletes the file on fivedock.
 
 **If you run more than one** supported resource of the same kind, the first one in the [supported list](readme.md) wins. For frameworks, QBox is checked before QBCore, since QBox servers often keep a qb-core compatibility resource around.
 

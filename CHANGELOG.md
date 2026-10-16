@@ -1,5 +1,19 @@
 # fn_bridge changelog
 
+## 1.4.1 (2026-10-16)
+
+Before you update
+- set fn_bridge:upload "fivemanage" does nothing now. Use a fivedock.dev token in fn_bridge:upload_token or run the fivedock agent.
+
+Added
+- KEYS.SetLocked locks or unlocks a car on the server and on the client that owns it, so a lock script running on that client no longer undoes it. A key script that keeps its own lock state replaces KEYS.SetLocked in fn_bridge_custom.
+
+Changed
+- MEDIA uploads, deletes and tickets go only to fivedock.dev. The fivemanage provider and the fn_bridge:upload convar are removed.
+
+Fixed
+- Phone calls on pma-voice are heard again. VOICE.SetCall called addPlayerToCall on the server, which pma-voice only has on the client, so nobody was put in the call channel. It uses setPlayerCall now, and speakerphone and mute work again with it.
+
 ## 1.4.0 (2026-10-15)
 
 Added

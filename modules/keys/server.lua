@@ -17,6 +17,17 @@ FN_KEYS.Give = function(playerId, vehicle, plate)
     return true
 end
 
+FN_KEYS.SetLocked = function(vehicle, locked)
+    if not vehicle or not DoesEntityExist(vehicle) then return false end
+
+    SetVehicleDoorsLocked(vehicle, locked and 2 or 1)
+
+    local owner = NetworkGetEntityOwner(vehicle)
+    if owner and owner > 0 then TriggerClientEvent('fn_bridge/client/setLocked', owner, NetworkGetNetworkIdFromEntity(vehicle), locked == true) end
+
+    return true
+end
+
 FN_KEYS.Remove = function(playerId, vehicle, plate)
     if GetResourceState('qbx_vehiclekeys') == 'started' then pcall(function() exports.qbx_vehiclekeys:RemoveKeys(playerId, vehicle) end) end
     if GetResourceState('qb-vehiclekeys') == 'started' then pcall(function() exports['qb-vehiclekeys']:RemoveKeys(playerId, plate) end) end

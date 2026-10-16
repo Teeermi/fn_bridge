@@ -11,20 +11,13 @@ local function Opts(opts)
     return type(opts) == 'table' and opts or {}
 end
 
-local Hosts = { fivedock = 'https://api.fivedock.dev', fivemanage = 'https://api.fivemanage.com' }
+local HOST = 'https://api.fivedock.dev'
 
 local function Token(opts)
     local token = Opts(opts).token
     if type(token) ~= 'string' or token == '' then token = GetConvar('fn_bridge:upload_token', '') end
 
     return token ~= '' and token or nil
-end
-
-local function Host(opts)
-    local host = Opts(opts).provider
-    if not Hosts[host] then host = GetConvar('fn_bridge:upload', 'fivedock') end
-
-    return Hosts[host] and host or 'fivedock'
 end
 
 local function Await(start, ms)
@@ -59,9 +52,8 @@ FN_MEDIA.Capturer = function()
 end
 
 FN_MEDIA.Provider = function(opts)
-    local host = Host(opts)
-    if Token(opts) then return host end
-    if host == 'fivedock' and Started('fivedock') then return 'fivedock-agent' end
+    if Token(opts) then return 'fivedock' end
+    if Started('fivedock') then return 'fivedock-agent' end
 
     return false
 end
@@ -118,7 +110,7 @@ end
 
 local function Http(mime, b64, opts)
     local r = Await(function(done)
-        PerformHttpRequest(Hosts[Host(opts)] .. '/api/v3/file/base64', function(code, body)
+        PerformHttpRequest(HOST .. '/api/v3/file/base64', function(code, body)
             local ok, j = pcall(json.decode, body or '')
             local d = ok and type(j) == 'table' and type(j.data) == 'table' and j.data
             done(code >= 200 and code < 300 and d and FN_MEDIA.IsUrl(d.url) and { url = d.url, id = type(d.id) == 'string' and d.id:sub(1, 64) or nil })
@@ -159,7 +151,7 @@ FN_MEDIA.Delete = function(files, opts)
     local n = 0
     for _, id in ipairs(type(files) == 'table' and files or { files }) do
         if type(id) == 'string' and #id <= 64 and id:match('^[%w%-_]+$') then
-            PerformHttpRequest(Hosts[Host(opts)] .. '/api/v3/file/' .. id, function() end, 'DELETE', '', { Authorization = token })
+            PerformHttpRequest(HOST .. '/api/v3/file/' .. id, function() end, 'DELETE', '', { Authorization = token })
             n = n + 1
         end
     end
@@ -187,7 +179,7 @@ FN_MEDIA.Ticket = function(opts)
     if folder and folder ~= '' then query[#query + 1] = 'path=' .. folder end
 
     local data = Await(function(done)
-        PerformHttpRequest(Hosts[Host(opts)] .. '/api/v3/file/presigned-url?' .. table.concat(query, '&'), function(code, body)
+        PerformHttpRequest(HOST .. '/api/v3/file/presigned-url?' .. table.concat(query, '&'), function(code, body)
             local ok, j = pcall(json.decode, body or '')
             done(code >= 200 and code < 300 and ok and type(j) == 'table' and type(j.data) == 'table' and j.data)
         end, 'GET', '', { Authorization = token })

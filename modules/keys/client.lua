@@ -66,6 +66,12 @@ RegisterNetEvent('fn_bridge/client/giveKeys', function(netId, plate)
     FN_KEYS.Give(Vehicle(netId), plate)
 end)
 
+RegisterNetEvent('fn_bridge/client/setLocked', function(netId, locked)
+    if GetInvokingResource() then return end
+    local vehicle = Vehicle(netId)
+    if vehicle then SetVehicleDoorsLocked(vehicle, locked and 2 or 1) end
+end)
+
 RegisterNetEvent('fn_bridge/client/removeKeys', function(netId, plate)
     FN_KEYS.Remove(Vehicle(netId), plate)
 end)

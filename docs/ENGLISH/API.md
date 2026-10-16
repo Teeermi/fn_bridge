@@ -200,6 +200,16 @@ A vehicle:
 
 `Config.Bridge.garage` of the calling script sets which column means parked, the parked value, the garage column, and extra columns to fill when a vehicle is added.
 
+## FN_BRIDGE.KEYS (server)
+
+| Function | Arguments | Does |
+|---|---|---|
+| `Give` | `playerId, vehicle, plate` | Gives the player keys through the key script that runs |
+| `Remove` | `playerId, vehicle, plate` | Takes the keys back |
+| `SetLocked` | `vehicle, locked` | Locks or unlocks the doors on the server and on the client that owns the car |
+
+A key script that keeps its own lock state replaces `KEYS.SetLocked` in `fn_bridge_custom` with a function of the same arguments.
+
 ## FN_BRIDGE.CHARACTERS (server)
 
 Character select and lifecycle, for multicharacter scripts. ESX (with esx_multicharacter's `Config.Multichar`), QBCore, QBox and ox_core. On vRP and standalone `Supported()` is `false` and every call returns `false`, `nil` or `{}`. `key` is the framework's character id (`char1:abc` on ESX, citizenid on QBCore and QBox, charId as a string on ox_core).
@@ -698,14 +708,14 @@ Config.Bridge = {
 | `Ready` | `opts` | `true` when a screenshot resource and an upload host are both there |
 | `Missing` | `opts` | list of what is missing: `'capture'` and/or `'token'` |
 | `Capturer` | none | `'screencapture'`, `'screenshot-basic'` or `false` |
-| `Provider` | `opts` | `'fivedock'` (API token), `'fivedock-agent'` (the fivedock resource, no token), `'fivemanage'` or `false` |
+| `Provider` | `opts` | `'fivedock'` (API token), `'fivedock-agent'` (the fivedock resource, no token) or `false` |
 | `Capture` | `playerId`, `opts` | the player's screen as a `data:image/...;base64,` string, or `false` |
 | `Upload` | `dataUrl`, `opts` | `url, fileId`, or `false`. Takes `data:image/`, `data:video/` and `data:audio/` |
 | `Shot` | `playerId`, `opts` | `Capture` then `Upload`: `url, fileId`, or `false, 'capture' or 'upload'` |
 | `Delete` | `fileIds`, `opts` | deletes uploaded files (needs a token), returns how many requests went out |
 | `IsUrl` | `url` | `true` for a plain `https://` URL that is safe to show in a UI |
 
-Files go to [fivedock.dev](https://fivedock.dev). All fields of `opts` are optional: `token` (falls back to `set fn_bridge:upload_token`; without any token the `fivedock` agent resource uploads, when it runs), `provider` (`'fivedock'` or `'fivemanage'`, falls back to `set fn_bridge:upload`, default `'fivedock'`), `encoding` (`'webp'`, `'jpg'`, `'png'`), `quality` (0 to 1), `name` (file name prefix), `folder`, `timeout` and `uploadTimeout` in ms. The screenshot holds the game picture only, without any NUI, so hide the radar and HUD on the client first. Calls wait for the host, so run them in a thread.
+Files go to [fivedock.dev](https://fivedock.dev). All fields of `opts` are optional: `token` (falls back to `set fn_bridge:upload_token`; without any token the `fivedock` agent resource uploads, when it runs), `encoding` (`'webp'`, `'jpg'`, `'png'`), `quality` (0 to 1), `name` (file name prefix), `folder`, `timeout` and `uploadTimeout` in ms. The screenshot holds the game picture only, without any NUI, so hide the radar and HUD on the client first. Calls wait for the host, so run them in a thread.
 
 ```lua
 local opts = { token = Config.Upload.token, name = 'myscript', folder = 'myscript' }

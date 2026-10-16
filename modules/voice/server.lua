@@ -61,7 +61,7 @@ local Pair = {
 
 local Channel = {
     ['pma-voice'] = function(playerId, id)
-        if id then exports['pma-voice']:addPlayerToCall(playerId, id) else exports['pma-voice']:removePlayerFromCall(playerId) end
+        exports['pma-voice']:setPlayerCall(playerId, tonumber(id) or 0)
     end,
     ['mumble-voip'] = function(playerId, id) TriggerClientEvent('fn_bridge:voice', playerId, 'call', id or 0) end,
     hook = function(playerId, id)
