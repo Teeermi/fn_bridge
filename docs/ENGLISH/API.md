@@ -773,7 +773,7 @@ Everything below came with fn_mdt, fn_business and fn_crime. The same rules hold
 | `RemoveGang` | `playerId` or `identifier`, `gangName` (optional) | boolean | maybe |
 | `CreateGang` | `name`, `label`, `grades`, `opts` | `true, 'live' or 'restart'`, or `false, error` | yes |
 | `DeleteGang` | `name`, `opts` | `true, 'live' or 'restart'`, or `false, error` | yes |
-| `GetInsurance` | `identifier` | `{ active, plan, expires }` from the `insurance` hook, or `false` | no |
+| `GetInsurance` | `identifier` | `{ active, plan, expires, cover }` from the `insurance` hook, or `false`. `cover` (0 to 1, optional) is the share of a hospital bill the plan pays | no |
 | `SetCharacter` | `identifier`, `{ dateOfBirth, sex, nationality }` | boolean. Online or offline, any field may be left out, `sex` is `'m'` or `'f'`, `dateOfBirth` is stored as given (the format your framework uses). ESX writes `users.dateofbirth`/`sex` and `nationality` when that column exists; QBCore and Qbox write `charinfo.birthdate`/`gender`/`nationality`. ox_core, vRP and standalone: `IsSupported` is `false` | no |
 
 - `grades` is an array of `{ grade, name, label, salary, isBoss }`. `grade` starts at `0`; ox_core numbers its grades from `1` in the order given, and `GetJobGrades` returns them that way. `opts` for `CreateJob`: `{ type, defaultDuty, offDutyPay, whitelisted, persist }`, all optional; the others take `{ persist }`. `persist = false` keeps the change in memory only on QBCore and Qbox (ESX and ox_core always save to the database). Errors: `'exists'`, `'unknown'`, `'invalid'`, `'unsupported'`, `'failed'`, or the framework's own message.
@@ -939,7 +939,7 @@ fn_mdt now comes first in the list, before fn_phone: `exports.fn_mdt:alert(alert
 
 ### Hook keys added in 1.9
 
-`gang`, `duty`, `multijob`, `insurance` (`function(identifier) return { active, plan, expires } end`), `jail`, `communityService`, `impound`, `gangAccount`, `societyAccount`, `billing`, `staff`, `doors`, `interact`, `appearance` (client).
+`gang`, `duty`, `multijob`, `insurance` (`function(identifier) return { active, plan, expires, cover } end`), `jail`, `communityService`, `impound`, `gangAccount`, `societyAccount`, `billing`, `staff`, `doors`, `interact`, `appearance` (client).
 
 ## Other bridge values
 
