@@ -188,23 +188,34 @@ end)
 local hushed, applied, hushing = {}, {}, false
 local Near = 4.0
 
-local function Hush(serverId, on)
-    if Started('pma-voice') then
-        local ok, was = pcall(function() return exports['pma-voice']:isPlayerMuted(serverId) end)
-        if ok then
-            if on and not was then
-                exports['pma-voice']:toggleMutePlayer(serverId)
-                applied[serverId] = 'pma'
-            elseif not on and applied[serverId] then
-                if was then exports['pma-voice']:toggleMutePlayer(serverId) end
-                applied[serverId] = nil
-                pcall(function() exports['pma-voice']:setCallVolume(exports['pma-voice']:getCallVolume()) end)
-            end
-            return
+local function PmaMuted(serverId)
+    if not Started('pma-voice') then return nil end
+    local ok, was = pcall(function() return exports['pma-voice']:getMutedPerson(serverId) end)
+    if ok then return was == true end
+end
+
+local function Hush(serverId, near)
+    local kind = applied[serverId]
+    if near == nil then
+        applied[serverId] = nil
+        if kind == 'pma' and PmaMuted(serverId) then exports['pma-voice']:toggleMutePlayer(serverId) end
+        if kind == 'raw' then MumbleSetVolumeOverrideByServerId(serverId, -1.0) end
+        local player = kind == 'pma' and GetPlayerFromServerId(serverId) or -1
+        if player ~= -1 and MumbleIsPlayerTalking(player) then
+            local ok, volume = pcall(function() return exports['pma-voice']:getCallVolume() end)
+            if ok and tonumber(volume) then MumbleSetVolumeOverrideByServerId(serverId, tonumber(volume)) end
         end
+        return
     end
-    MumbleSetVolumeOverrideByServerId(serverId, on and 0.0 or -1.0)
-    applied[serverId] = on and 'raw' or nil
+    if not kind then
+        local was = PmaMuted(serverId)
+        if was == false then exports['pma-voice']:toggleMutePlayer(serverId) end
+        kind = was == nil and 'raw' or was and 'held' or 'pma'
+        applied[serverId] = kind
+    end
+    if kind == 'held' then return end
+    MumbleSetVolumeOverrideByServerId(serverId, near and -1.0 or 0.0)
+    if near then MumbleSetSubmixForServerId(serverId, -1) end
 end
 
 local function HushLoop()
@@ -212,22 +223,15 @@ local function HushLoop()
     hushing = true
     CreateThread(function()
         while next(hushed) or next(applied) do
-            local me = GetEntityCoords(PlayerPedId())
+            local me, raw = GetEntityCoords(PlayerPedId()), false
             for serverId in pairs(hushed) do
                 local player = GetPlayerFromServerId(serverId)
                 local ped = player ~= -1 and GetPlayerPed(player) or 0
-                local far = ped == 0 or #(GetEntityCoords(ped) - me) > Near
-                if far ~= (applied[serverId] ~= nil) then Hush(serverId, far) end
+                Hush(serverId, ped ~= 0 and #(GetEntityCoords(ped) - me) <= Near)
+                raw = raw or applied[serverId] == 'raw'
             end
             for serverId in pairs(applied) do
-                if not hushed[serverId] then Hush(serverId, false) end
-            end
-            local raw = false
-            for serverId, kind in pairs(applied) do
-                if kind == 'raw' then
-                    MumbleSetVolumeOverrideByServerId(serverId, 0.0)
-                    raw = true
-                end
+                if not hushed[serverId] then Hush(serverId, nil) end
             end
             Wait(raw and 0 or 250)
         end
@@ -247,5 +251,5 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    for serverId in pairs(applied) do Hush(serverId, false) end
+    for serverId in pairs(applied) do Hush(serverId, nil) end
 end)

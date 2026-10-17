@@ -1,5 +1,12 @@
 # fn_bridge changelog
 
+## 1.4.2 (2026-10-17)
+
+Fixed
+- Muting a phone call on pma-voice uses the pma-voice mute. The bridge asked pma-voice for isPlayerMuted, which pma-voice does not have, so it forced the player's volume to zero every frame instead.
+- Unmuting no longer turns the call down. It used to set the pma-voice call volume to a hundredth of what it was.
+- A muted caller standing next to you sounds like a normal voice, without the phone filter.
+
 ## 1.4.1 (2026-10-16)
 
 Before you update
