@@ -214,6 +214,12 @@ local function Tier19(framework, one)
         return after == before + 1 and removed and seen == -1 and S.GetMoney(job) == before, ('%s before %d after %d removed %s seen %s'):format(job, before, after, tostring(removed), tostring(seen))
     end)
 
+    Check('COINS guards', function()
+        local CO = B.COINS
+        if CO.Remove(nil, 5) ~= false or CO.Remove(1, 0) ~= false or CO.Add(-1, 5) ~= false or CO.Get(nil) ~= nil then return false, 'guards' end
+        return true, tostring(CO.Name() or 'none')
+    end)
+
     Check('BILLING without a player', function()
         local BL = B.BILLING
         local name = BL.Name()

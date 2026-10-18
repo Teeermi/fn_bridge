@@ -7,6 +7,12 @@ local MISS = '__fn_bridge_miss'
 if IsDuplicityVersion() then
     local handlers, spent = {}, {}
 
+    local function reply(src, ...)
+        local ok, packed = pcall(msgpack.pack, { ... })
+        if ok and #packed > 65536 and pcall(TriggerLatentClientEvent, EVENT, src, 2097152, ...) then return end
+        TriggerClientEvent(EVENT, src, ...)
+    end
+
     AddEventHandler('playerDropped', function() spent[source] = nil end)
 
     RegisterNetEvent(EVENT, function(batch)
@@ -33,7 +39,7 @@ if IsDuplicityVersion() then
                             print(('^1SCRIPT ERROR: %s^0'):format(res[2]))
                             return TriggerClientEvent(EVENT, src, r[1])
                         end
-                        TriggerClientEvent(EVENT, src, r[1], table.unpack(res, 2, res.n))
+                        reply(src, r[1], table.unpack(res, 2, res.n))
                     end)
                 end
             end
@@ -51,11 +57,12 @@ if IsDuplicityVersion() then
 end
 
 local TIMEOUT = GetConvarInt('ox:callbackTimeout', 300000)
-local seq, waiting, queue, timers, foreign = 0, {}, nil, {}, {}
+local BIG = 4096
+local seq, waiting, queue, queued, timers, foreign = 0, {}, nil, 0, {}, {}
 
 local function flush()
     local q = queue
-    queue = nil
+    queue, queued = nil, 0
     if q then TriggerServerEvent(EVENT, q) end
 end
 
@@ -71,12 +78,20 @@ local function send(name, cb, late, ...)
     seq = seq + 1
     local id = seq
     waiting[id] = { name = name, cb = cb, late = late, args = table.pack(...) }
-    if not queue then
-        queue = {}
-        SetTimeout(0, flush)
+    local call = { id, name, waiting[id].args }
+    local ok, packed = pcall(msgpack.pack, call)
+    local size = ok and #packed or 0
+    if size > BIG then
+        TriggerLatentServerEvent(EVENT, 262144, { call })
+    else
+        if not queue then
+            queue = {}
+            SetTimeout(0, flush)
+        end
+        queue[#queue + 1] = call
+        queued = queued + size
+        if #queue >= 32 or queued > BIG then flush() end
     end
-    queue[#queue + 1] = { id, name, waiting[id].args }
-    if #queue >= 32 then flush() end
     SetTimeout(TIMEOUT, function()
         local w = waiting[id]
         waiting[id] = nil

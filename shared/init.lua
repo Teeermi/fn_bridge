@@ -338,6 +338,7 @@ FN_BRIDGE.VehiclesContract = {
 FN_BRIDGE.ServerOnly = {
     JAIL = { 'Name', 'Send', 'Release', 'Get', 'GetOffline', 'CommunityService' },
     BILLING = { 'Name', 'Send', 'List', 'Pay', 'Provide' },
+    COINS = { 'Name', 'Get', 'Remove', 'Add', 'Provide' },
     STAFF = { 'Host', 'Call' },
     DOORS = { 'Name', 'List', 'Get', 'IsLocked', 'SetLocked', 'Allow' },
     HTTP = { 'Header', 'Tunnel', 'Origin' },

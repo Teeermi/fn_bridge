@@ -1,5 +1,13 @@
 # fn_bridge changelog
 
+## 1.4.4 (2026-10-18)
+
+Added
+- COINS gives scripts one way to charge premium coins. It uses CoinStore (fn_itemshop) when it runs, and any other coin shop can plug in from fn_bridge_custom with FN_BRIDGE.Provide('coins', { Get, Remove, Add }). fnb_doctor shows which one is used.
+
+Fixed
+- Callbacks with more than 4 KB of arguments go to the server as latent events, and answers over 64 KB come back the same way. Before, a script that sent a lot through callbacks, like screen sharing in fn_phone, could get the player kicked with Reliable network event size overflow. This needs sv_enableNetEventReassembly, which is on by default.
+
 ## 1.4.3 (2026-10-18)
 
 Changed

@@ -841,6 +841,20 @@ One address for invoices from every script.
 
 `bill`: `{ to = identifier or job, from = job or resource, amount, label, items = { { label, amount, count } }, due }` (`due` is a unix time). `status` is `'unpaid'`, `'overdue'` or `'paid'`. Ids carry their source (`'esx_billing:12'`), so `Pay` finds the right one. A provider is `{ Send = fn(playerId, bill), List = fn(identifier), Pay = fn(playerId, id) }` with its own ids; fn_business registers itself this way. Without a provider esx_billing is used. Errors: `'none'`, `'invalid'`, `'funds'`, `'unknown'`, `'failed'`.
 
+### COINS (server)
+
+Premium coins from the server's coin shop, for scripts that sell something for coins.
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Name` | none | the providing resource, `'fn_itemshop'`, or `false` |
+| `Get` | `playerId` | balance, or `nil` |
+| `Remove` | `playerId`, `amount`, `reason` | `true`, or `false, error` |
+| `Add` | `playerId`, `amount`, `reason` | boolean |
+| `Provide` | `impl` | `true`; same as `FN_BRIDGE.Provide('coins', impl)` |
+
+Without a provider the coins come from CoinStore (fn_itemshop) when it runs. Another coin shop plugs in from fn_bridge_custom with `FN_BRIDGE.Provide('coins', { Get = fn(playerId), Remove = fn(playerId, amount, reason), Add = fn(playerId, amount, reason) })`, where `Remove` returns `true` only when it took the coins. When `Name` is `false`, scripts treat coin prices as switched off. Errors: `'invalid'`, `'none'`, `'funds'`.
+
 ### STAFF (server)
 
 | Function | Args | Returns |
@@ -939,7 +953,7 @@ fn_mdt now comes first in the list, before fn_phone: `exports.fn_mdt:alert(alert
 
 ### Hook keys added in 1.9
 
-`gang`, `duty`, `multijob`, `insurance` (`function(identifier) return { active, plan, expires, cover } end`), `jail`, `communityService`, `impound`, `gangAccount`, `societyAccount`, `billing`, `staff`, `doors`, `interact`, `appearance` (client).
+`gang`, `duty`, `multijob`, `insurance` (`function(identifier) return { active, plan, expires, cover } end`), `jail`, `communityService`, `impound`, `gangAccount`, `societyAccount`, `billing`, `coins`, `staff`, `doors`, `interact`, `appearance` (client).
 
 ## Other bridge values
 

@@ -80,6 +80,7 @@ Finish = function()
     for _, key in ipairs({ 'Get', 'SetRange', 'SetVolume', 'RadioEnabled', 'RadioTalk' }) do FN_VOICE[key] = FN_BRIDGE.UnsupportedFunction('VOICE', key, 'client side only') end
     FN_BRIDGE.JAIL = FN_JAIL
     FN_BRIDGE.BILLING = FN_BILLING
+    FN_BRIDGE.COINS = FN_COINS
     FN_BRIDGE.STAFF = FN_STAFF
     FN_BRIDGE.DOORS = FN_DOORS
     FN_BRIDGE.APPEARANCE = FN_APPEARANCE
@@ -88,7 +89,7 @@ Finish = function()
     FN_BRIDGE.PREFS = FN_BRIDGE.UnavailableNamespace('PREFS', 'client side only', { 'Keys', 'Get', 'All', 'Set' })
     FN_BRIDGE.SOCIETY = Resolve('SOCIETY', FN_SOCIETY, FN_BRIDGE.SocietyContract, FN_BRIDGE.societyName or '_default')
 
-    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'HTTP', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
+    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'HTTP', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'JAIL', 'BILLING', 'COINS', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetName', 'name')
@@ -112,6 +113,7 @@ Finish = function()
             { 'vehicles', FN_VEHICLES.Available() and 'ok' or 'no garage table', FN_VEHICLES.Available() and 'ok' or 'fallback' },
             { 'jail', FN_JAIL.Name() or 'none detected', FN_JAIL.Name() and 'ok' or 'fallback' },
             { 'billing', FN_BILLING.Name() or 'none detected', FN_BILLING.Name() and 'ok' or 'fallback' },
+            { 'coins', FN_COINS.Name() or 'none detected', FN_COINS.Name() and 'ok' or 'fallback' },
             { 'doors', FN_DOORS.Name() or 'none detected', FN_DOORS.Name() and 'ok' or 'fallback' },
             { 'clothing', FN_APPEARANCE.Name() or 'none detected', FN_APPEARANCE.Name() and 'ok' or 'fallback' },
             { 'radio', FN_VOICE.Name() or 'none detected', FN_VOICE.Name() and 'ok' or 'fallback' },
