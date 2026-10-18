@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.4.3 (2026-10-18)
+
+Changed
+- INTERACT.IsCuffed and INTERACT.Is with cuff also read the IsHandcuffed, isCuffed and IsCuffed state bags, next to isHandcuffed, handcuffed and cuffed. Police scripts name this flag differently, and the bridge used to miss the capitalised ones.
+
 ## 1.4.2 (2026-10-17)
 
 Fixed

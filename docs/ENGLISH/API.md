@@ -929,7 +929,7 @@ Cuffs, bags, escorting and the like belong to the police or crime script the ser
 | `Has` | `kind` | `'hook'`, the resource that does it, or `false` |
 | `Do` | `playerId` (who acts), `target`, `kind`, `on` (`true` / `false`, toggles when `nil`) | boolean, `false` when nobody handles it, so your script does its own |
 | `Is` | `target`, `kind` | boolean |
-| `IsCuffed` (client) | none | `true` when the local player is cuffed: the `interact` hook's `isCuffed`, QBCore and Qbox `ishandcuffed`, the `isHandcuffed`, `handcuffed` or `cuffed` state bag, else `IsPedCuffed` |
+| `IsCuffed` (client) | none | `true` when the local player is cuffed: the `interact` hook's `isCuffed`, QBCore and Qbox `ishandcuffed`, the `isHandcuffed`, `IsHandcuffed`, `handcuffed`, `cuffed`, `isCuffed` or `IsCuffed` state bag, else `IsPedCuffed` |
 
 `kind`: `'cuff'`, `'ziptie'`, `'bag'`, `'escort'`, `'trunk'`, `'search'`, `'rob'`. Read: qb-policejob, qbx_police, esx_policejob (cuff, escort, search where they have it), search through the inventory resource. Hook `interact` = `{ cuff = fn(playerId, target, on), ..., is = fn(target, kind) }`, any subset; on the client `{ isCuffed = fn() }`.
 

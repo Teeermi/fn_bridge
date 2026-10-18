@@ -3,6 +3,7 @@ FN_INTERACT = {}
 local X = FN_INTERACT
 local Kinds = { cuff = true, ziptie = true, bag = true, escort = true, trunk = true, search = true, rob = true }
 local Cuffed = {}
+local CuffBags = { 'isHandcuffed', 'IsHandcuffed', 'handcuffed', 'cuffed', 'isCuffed', 'IsCuffed' }
 
 local function Online(playerId)
     playerId = tonumber(playerId)
@@ -19,7 +20,10 @@ end
 
 local function CuffedNow(target)
     local state = Player(target).state
-    if Meta(target, 'ishandcuffed') == true or state.isHandcuffed == true or state.handcuffed == true or state.cuffed == true then return true end
+    if Meta(target, 'ishandcuffed') == true then return true end
+    for _, key in ipairs(CuffBags) do
+        if state[key] == true then return true end
+    end
 
     return Cuffed[target] == true
 end
