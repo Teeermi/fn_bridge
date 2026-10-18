@@ -135,7 +135,7 @@ Config.Bridge = {
 | Key | Default | What it does |
 | --- | --- | --- |
 | `language` | `ox:locale`, else `en` | Language of the script's `locales/*.json` |
-| `garage` | stock garages | Which column means parked (`parkedColumn`, its value when parked, `parkedOut` for its value when out), the garage column, and extra columns to fill when the script adds a car |
+| `garage` | stock garages | Which column means parked (`parkedColumn`, its value when parked, `parkedOut` for its value when out), the garage column, the column that marks an impounded car (`impoundColumn`, `impounded` when the table has it), and extra columns to fill when the script adds a car |
 | `dirtyMoney` | `markedbills`, `black_money`, `dinheirosujo` | The item used as black money where the framework has no black money account |
 | `banWebhook` | empty | Discord webhook for the script's ban logs |
 | `admins` | `fn_bridge:admins` | Staff groups for this script only, as a list: `{ 'owner', 'cardev' }` |

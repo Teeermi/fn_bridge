@@ -70,6 +70,14 @@ FN_MEDIA.Ready = function(opts)
     return #FN_MEDIA.Missing(opts) == 0
 end
 
+local shots, shotSeq = {}, 0
+
+RegisterNetEvent('fn_bridge:shotData', function(token, data)
+    local shot = shots[token]
+    if not shot or shot.player ~= source then return end
+    shot.done(type(data) == 'string' and #data <= 16777216 and data or false)
+end)
+
 FN_MEDIA.Capture = function(playerId, opts)
     playerId = tonumber(playerId)
     local capturer = FN_MEDIA.Capturer()
@@ -82,7 +90,11 @@ FN_MEDIA.Capture = function(playerId, opts)
         if capturer == 'screencapture' then
             exports.screencapture:serverCapture(playerId, { encoding = encoding, quality = quality }, function(d) done(d) end, 'base64')
         else
-            exports['screenshot-basic']:requestClientScreenshot(playerId, { encoding = encoding, quality = quality }, function(err, d) done(not err and d) end)
+            shotSeq = shotSeq + 1
+            local token = shotSeq
+            shots[token] = { player = playerId, done = function(d) shots[token] = nil done(d) end }
+            SetTimeout(30000, function() shots[token] = nil end)
+            TriggerClientEvent('fn_bridge:shot', playerId, token, { encoding = encoding, quality = quality })
         end
     end, tonumber(opts.timeout) or 12000)
 

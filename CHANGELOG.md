@@ -1,5 +1,11 @@
 # fn_bridge changelog
 
+## 1.4.5 (2026-10-18)
+
+Fixed
+- MEDIA.Capture works with screenshot-basic. The bridge now takes the picture with its client export and sends it to the server as a latent event. requestClientScreenshot uploaded over plain http, which the https NUI blocks as Mixed Content, so photos were never saved.
+- Cars whose impounded column is set count as impounded, so scripts can't take them out of the garage. impoundColumn in the garage settings names another column.
+
 ## 1.4.4 (2026-10-18)
 
 Added

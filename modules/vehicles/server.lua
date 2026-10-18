@@ -93,7 +93,12 @@ local function GarageConfig()
         or {}
 end
 
-local Reserved = { parkedColumn = true, garageColumn = true, parkedOut = true }
+local Reserved = { parkedColumn = true, garageColumn = true, parkedOut = true, impoundColumn = true }
+
+local function ImpoundColumn(columns)
+    local name = FN_DB.Identifier(GarageConfig().impoundColumn) or 'impounded'
+    return columns[name] and name or nil
+end
 
 local function Trim(plate)
     return type(plate) == 'string' and plate:match('^%s*(.-)%s*$') or ''
@@ -185,6 +190,9 @@ local function ReadState(schema, columns, row)
     end
 
     if schema.data then return row[schema.parked] == nil and 'out' or 'garage', row[schema.parked] end
+
+    local impounded = ImpoundColumn(columns)
+    if impounded and (FN_DB.Bool(row[impounded]) or (tonumber(row[impounded]) or 0) > 0) then return 'impound' end
 
     local parked = Parked(schema, columns)
     if schema.pound and type(row[schema.pound]) == 'string' and row[schema.pound] ~= '' then return 'impound', row[schema.pound] end
@@ -670,6 +678,8 @@ FN_VEHICLES.SetState = function(owner, plate, state, options)
         end
         if state == 'garage' and schema.pound and columns[schema.pound] then sets[#sets + 1] = ('%s = NULL'):format(schema.pound) end
         if state == 'garage' and schema.depot and columns[schema.depot] then sets[#sets + 1] = ('%s = 0'):format(schema.depot) end
+        local impounded = state == 'garage' and ImpoundColumn(columns)
+        if impounded then sets[#sets + 1] = ('%s = 0'):format(impounded) end
     end
 
     if #sets == 0 then return false, 'unsupported' end
@@ -721,6 +731,8 @@ FN_VEHICLES.Impound = function(plate, options)
         Set(schema.parked, 0)
         Set(schema.pound, depot or 'los_santos')
     end
+    local impounded = not schema.data and ImpoundColumn(columns)
+    if impounded then Set(impounded, 1) end
     if #sets == 0 then return false, 'unsupported' end
 
     params[#params + 1] = vehicle.plate

@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-version '1.4.4'
+version '1.4.5'
 author 'fivenuts.dev | https://fivenuts.dev'
 description 'fn_bridge - Bridge for fivenuts scripts'
 
@@ -33,6 +33,7 @@ client_scripts {
     'modules/picker/client.lua',
     'modules/keys/client.lua',
     'modules/voice/client.lua',
+    'modules/media/client.lua',
     'modules/appearance/client.lua',
     'modules/jail/client.lua',
     'modules/interact/client.lua',
