@@ -4,12 +4,12 @@
  "fn_bridge_custom/client.lua": "811c9dc5",
  "fn_bridge_custom/fxmanifest.lua": "377d4c58",
  "fn_bridge_custom/server.lua": "811c9dc5",
- "fxmanifest.lua": "04c2ec7d",
+ "fxmanifest.lua": "7d3fb76a",
  "import.lua": "662d5725",
  "modules/appearance/client.lua": "1840161f",
  "modules/appearance/server.lua": "979f3773",
  "modules/billing/server.lua": "9a8add1a",
- "modules/characters/client.lua": "478670f1",
+ "modules/characters/client.lua": "65d33d06",
  "modules/characters/server.lua": "3c4f88b8",
  "modules/coins/server.lua": "3388b1a2",
  "modules/db/server.lua": "4ea4fa51",
@@ -91,7 +91,7 @@
  "modules/voice/client.lua": "2f9635ed",
  "modules/voice/server.lua": "344145ec",
  "server.lua": "cb02424c",
- "shared/init.lua": "2a9a0050",
+ "shared/init.lua": "40faac68",
  "shared/settings.lua": "e551c241",
  "snippets.lua": "8a6e1a5f"
 }

@@ -1,5 +1,13 @@
 # fn_bridge changelog
 
+## 1.4.7 (2026-10-24)
+
+Added
+- CHARACTERS.AwaitCreator waits until a clothing creator opened by another script is closed, for example the one a starter apartment opens. It returns true when a creator opened.
+
+Fixed
+- CHARACTERS.Spawn now waits for a new character to save their look on QBCore, Qbox and ox_core as well. It returns once qb-clothing or illenium-appearance closes, the same way it already waited for esx_skin. Before, it returned while the creator was still open, so whatever a script did after the spawn started too early.
+
 ## 1.4.6 (2026-10-24)
 
 Added

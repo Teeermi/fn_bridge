@@ -350,7 +350,7 @@ FN_BRIDGE.KeysContract = { 'Give', 'Remove' }
 
 FN_BRIDGE.CharactersContract = {
     server = { 'Supported', 'Owner', 'List', 'Spawns', 'DeferredLogin', 'TakeOver', 'Login', 'Create', 'Delete', 'Logout', 'IsLoaded', 'StarterItems', 'Money', 'Dossier', 'HandsOver', 'Slots' },
-    client = { 'IsLoggedIn', 'Prepare', 'LoadingOff', 'Spawn', 'Loaded', 'Done' },
+    client = { 'IsLoggedIn', 'Prepare', 'LoadingOff', 'Spawn', 'AwaitCreator', 'Loaded', 'Done' },
 }
 
 FN_BRIDGE.TargetContract = {

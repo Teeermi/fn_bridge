@@ -241,7 +241,8 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `IsLoggedIn` | none | boolean |
 | `Prepare` | none | turns off auto spawn and weather sync before your select screen |
 | `LoadingOff` | none | closes the loading screen |
-| `Spawn` | `coords`, `{ isNew, sex, kind, creator, ready, appearance, login }` | `false` when `login` failed. Places the player the framework's way and fires its loaded events. `ready()` is called right before the screen fades in, `appearance(sex)` opens your creator for a new character (return `false` to try the `appearance` hook's `creator`, then the framework's), `login()` runs the deferred login on ox_core |
+| `Spawn` | `coords`, `{ isNew, sex, kind, creator, ready, appearance, login }` | `false` when `login` failed. Places the player the framework's way and fires its loaded events. `ready()` is called right before the screen fades in, `appearance(sex)` opens your creator for a new character and returns once the player saved it (return `false` to try the `appearance` hook's `creator`, then the framework's), `login()` runs the deferred login on ox_core. For a new character it returns after the clothing creator closed: esx_skin calls back, qb-clothing and illenium-appearance are waited out until they let go of the mouse |
+| `AwaitCreator` | `ms` (default 10000) | `true` when a clothing creator opened within `ms` and was closed. Use it when another script opens the creator, for example a starter apartment |
 | `Loaded` | none | fires the framework's player loaded events, for your own spawn |
 | `Done` | none | turns weather sync back on |
 
@@ -929,7 +930,7 @@ An outfit is the same everywhere, so it survives a change of clothing script:
 | `Apply` | client | `ped`, `data` | boolean. Dresses any ped (a preview, a cast) from saved illenium-appearance, fivem-appearance, qb-clothing or skinchanger data |
 | `Creator` | client | `sex` (`'m'` or `'f'`) | `true` when the `appearance` hook opened a creator |
 
-`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn(), apply = fn(ped, data), creator = fn(sex) }`, on the server `{ skin = fn(identifier) }` returning `{ model, skin }` for `CHARACTERS.List`.
+`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn(), apply = fn(ped, data), creator = fn(sex) }` (`creator` returns once the player saved the look), on the server `{ skin = fn(identifier) }` returning `{ model, skin }` for `CHARACTERS.List`.
 
 ### DEATH (server)
 

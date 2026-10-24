@@ -90,6 +90,20 @@ local function spawnEsx(c, o, ready, appearance)
     esxEvents()
 end
 
+local function awaitCreator(ms)
+    local stop, seen = GetGameTimer() + (tonumber(ms) or 10000), false
+    while GetGameTimer() < stop do
+        if IsNuiFocused() then
+            seen = true
+            local limit = GetGameTimer() + 1800000
+            while IsNuiFocused() and GetGameTimer() < limit do Wait(250) end
+            stop = GetGameTimer() + 750
+        end
+        Wait(100)
+    end
+    return seen
+end
+
 local function spawnQb(c, o, ready, appearance, qbx)
     if GetResourceState('spawnmanager') == 'started' then
         local p = promise.new()
@@ -108,7 +122,10 @@ local function spawnQb(c, o, ready, appearance, qbx)
     if o.isNew and o.creator ~= false then
         ready()
         DoScreenFadeIn(600)
-        if not appearance(o.sex) then TriggerEvent('qb-clothes:client:CreateFirstCharacter') end
+        if not appearance(o.sex) then
+            TriggerEvent('qb-clothes:client:CreateFirstCharacter')
+            awaitCreator()
+        end
     end
 end
 
@@ -156,7 +173,7 @@ FN_CHARACTERS.Spawn = function(c, o)
         if o.isNew then
             ready()
             DoScreenFadeIn(600)
-            appearance(o.sex)
+            if not appearance(o.sex) and GetResourceState('illenium-appearance') == 'started' then awaitCreator() end
         end
     elseif f == 'esx' then
         spawnEsx(c, o, ready, appearance)
@@ -165,6 +182,8 @@ FN_CHARACTERS.Spawn = function(c, o)
     end
     return true
 end
+
+FN_CHARACTERS.AwaitCreator = awaitCreator
 
 FN_CHARACTERS.Loaded = function()
     local f = fw()
