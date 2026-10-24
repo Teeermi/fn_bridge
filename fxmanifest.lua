@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-version '1.4.5'
+version '1.4.6'
 author 'fivenuts.dev | https://fivenuts.dev'
 description 'fn_bridge - Bridge for fivenuts scripts'
 

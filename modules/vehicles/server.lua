@@ -268,7 +268,7 @@ local function OnlyStored(sql, params, schema, columns)
 end
 
 FN_VEHICLES.Available = function()
-    if Framework() == 'vrp' then return FN_DB.HasTable('vrp_user_vehicles'), 'vrp_user_vehicles' end
+    if Framework() == 'vrp' then return FN_DB.HasTable('vrp_user_vehicles') end
 
     local schema, columns, reason = Ready()
     if not schema then return false, reason end
@@ -295,6 +295,12 @@ FN_VEHICLES.Available = function()
     if #required > 0 then return true, 'NOT NULL columns without a default: ' .. table.concat(required, ', ') end
 
     return true
+end
+
+FN_VEHICLES.Traits = function()
+    local vrp = Framework() == 'vrp'
+
+    return { platePerVehicle = not vrp, onePerModel = vrp }
 end
 
 FN_VEHICLES.GarageColumn = function()
@@ -424,11 +430,46 @@ local function OxAdd(owner, model, plate, props, options)
     return true
 end
 
+local function VrpAdd(owner, model)
+    if not tonumber(owner) then return false, 'no_owner' end
+
+    local ok, affected = pcall(MySQL.update.await, 'INSERT IGNORE INTO vrp_user_vehicles (user_id, vehicle) VALUES (?, ?)', { tonumber(owner), model:lower() })
+    if not ok then
+        print(('^1[fn_bridge] adding vehicle %s failed:^7 %s'):format(model, tostring(affected)))
+        return false, 'failed'
+    end
+
+    if (affected or 0) < 1 then return false, 'owned' end
+
+    return true
+end
+
+local function VrpRemove(owner, plate, options)
+    local userId = tonumber(OwnerList(owner)[1])
+    if not userId then return false, 'not_owned' end
+
+    local model = type(options.model) == 'string' and options.model:lower() or nil
+    local vehicle
+    for _, row in ipairs(VrpRows('v.user_id', userId)) do
+        if model and row.modelName == model or not model and row.plate == plate then
+            if vehicle then return false, 'not_owned' end
+            vehicle = row
+        end
+    end
+    if not vehicle then return false, 'not_owned' end
+
+    local ok, affected = pcall(MySQL.update.await, 'DELETE FROM vrp_user_vehicles WHERE user_id = ? AND vehicle = ?', { userId, vehicle.modelName })
+    if not ok or (affected or 0) < 1 then return false, 'failed' end
+
+    return true, nil, vehicle
+end
+
 FN_VEHICLES.Add = function(owner, model, plate, props, options)
     options = type(options) == 'table' and options or {}
     plate = Trim(plate)
     if type(model) ~= 'string' or plate == '' then return false, 'invalid' end
     if Framework() == 'ox' then return OxAdd(OwnerList(owner)[1], model, plate, props, options) end
+    if Framework() == 'vrp' then return VrpAdd(OwnerList(owner)[1], model) end
 
     local schema, columns, reason = Ready()
     if not schema then return false, reason end
@@ -512,6 +553,7 @@ end
 
 FN_VEHICLES.Remove = function(owner, plate, options)
     options = type(options) == 'table' and options or {}
+    if Framework() == 'vrp' then return VrpRemove(owner, Trim(plate), options) end
     local schema, columns, reason = Ready()
     if not schema then return false, reason end
 

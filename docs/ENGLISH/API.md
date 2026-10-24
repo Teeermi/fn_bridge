@@ -165,20 +165,21 @@ ALTER TABLE users ADD INDEX idx_users_name (firstname, lastname);
 
 ## FN_BRIDGE.VEHICLES (server)
 
-Owned vehicles in the garage table of the running framework: `owned_vehicles` (ESX), `player_vehicles` (QBCore, QBox), `vehicles` (ox_core), `vrp_user_vehicles` (vRP, read only), `fn_vehicles` (standalone, created on first use). jg-advancedgarages and cd_garage columns (`in_garage`, `garage_id`, `impound`) are picked up by themselves.
+Owned vehicles in the garage table of the running framework: `owned_vehicles` (ESX), `player_vehicles` (QBCore, QBox), `vehicles` (ox_core), `vrp_user_vehicles` (vRP: `Add`, `Remove` with `{ model }`, `Get` and `List`), `fn_vehicles` (standalone, created on first use). jg-advancedgarages and cd_garage columns (`in_garage`, `garage_id`, `impound`) are picked up by themselves.
 
 `owner` is an identifier or an array of them. On QBCore and QBox an entry starting with `license:` matches the `license` column instead of `citizenid`.
 
 | Function | Args | Returns |
 | --- | --- | --- |
 | `Available` | none | boolean, and a reason or warning |
+| `Traits` | none | `{ platePerVehicle, onePerModel }`: vRP keeps one car per model and uses the character's plate for all of them |
 | `Get` | `plate` | vehicle, or `false` |
 | `List` | `owner` | array of vehicles |
 | `IsPlateTaken` | `plate` | boolean |
 | `IsStored` | `owner`, `plate` | boolean |
 | `GetProps` | `owner`, `plate` | props table, `{}` when not found |
 | `Add` | `owner`, `model`, `plate`, `props`, `{ garage, license, vin }` | boolean, error |
-| `Remove` | `owner`, `plate`, `{ force }` | boolean, error, vehicle (with `row`) |
+| `Remove` | `owner`, `plate`, `{ force, model }` | boolean, error, vehicle (with `row`). `model` picks the car on vRP |
 | `SetOwner` | `owner`, `plate`, `newOwner`, `{ onlyStored }` | boolean, error |
 | `TransferAll` | `fromOwner`, `toOwner` | number of vehicles moved |
 | `SetPlate` | `owner`, `plate`, `newPlate`, `{ onlyStored }` | boolean, error (also renames qb trunk and glovebox stashes) |
@@ -196,7 +197,7 @@ A vehicle:
 }
 ```
 
-`state` is `'garage'`, `'out'` or `'impound'`. `fuel`, `engine` and `body` are 0-100, or `nil` when unknown. `Remove` refuses a car that is out unless `force` is set. Errors: `'table_missing'`, `'schema'`, `'not_owned'`, `'not_stored'`, `'plate_taken'`, `'unsupported'`, `'failed'`.
+`state` is `'garage'`, `'out'` or `'impound'`. `fuel`, `engine` and `body` are 0-100, or `nil` when unknown. `Remove` refuses a car that is out unless `force` is set. Errors: `'table_missing'`, `'schema'`, `'not_owned'`, `'not_stored'`, `'plate_taken'`, `'owned'` (vRP: that model is already owned), `'unsupported'`, `'failed'`.
 
 `Config.Bridge.garage` of the calling script sets which column means parked, the parked value, the garage column, and extra columns to fill when a vehicle is added.
 
@@ -780,7 +781,7 @@ Everything below came with fn_mdt, fn_business and fn_crime. The same rules hold
 - Where jobs live: ESX tables `jobs` and `job_grades` (live when ESX has `RefreshJobs`, else `'restart'`), Qbox `CreateJob`/`RemoveJob` (saved to its jobs file), QBCore `AddJob`/`UpdateJob`/`RemoveJob` in memory plus fn_bridge's own `fn_bridge_groups` table, replayed at every start, ox_core groups (`CreateGroup`, grades in `ox_group_grades`). vRP and standalone: `IsSupported` is `false` for the create, grade and delete functions.
 - **Gangs.** QBCore and Qbox use their gangs. ESX uses the `hiddenjob` pattern when `users.hiddenjob` exists (a second ESX job on `xPlayer.hiddenjob`, set with `setHiddenJob`): gangs are then ESX jobs and `CreateGang` is `CreateJob`. Anything else: the `gang` hook for reading and `FRAMEWORK.SetGang` / `FRAMEWORK.RemoveGang` overrides for writing. `GetGang` now asks the `gang` hook first. `Supports('gangs')` follows all of this.
 - **Duty.** `CheckJobDuty` asks the `duty` hook first (`function(playerId) return boolean end`), for servers where a job core counts duty.
-- **Multijob.** Qbox natively, ps-multijob when it runs, else the `multijob` hook: `{ list = function(playerId) end, set = function(playerId, job) end, add = function(target, job, grade) end }`. `Supports('multijob')` is `true` only with one of these, so a staff panel knows whether a second job can be added next to the main one. `Supports('gangs')` is also `true` when a `gang` hook is registered.
+- **Multijob.** Qbox natively, ps-multijob when it runs, else the `multijob` hook: `{ list = function(playerId) end, set = function(playerId, job) end, add = function(target, job, grade) end }`. `Supports('multijob')` is `true` only with one of these, so a staff panel knows whether a second job can be added next to the main one. `Supports('gangs')` is also `true` when a `gang` hook is registered. `Supports('salary')` is `true` on ESX, QBCore and Qbox, where each grade keeps a salary the framework pays out; ox_core and vRP grades have none.
 
 Events (server, `AddEventHandler`):
 

@@ -578,6 +578,7 @@ if F.Supports then
     local supports = F.Supports
     F.Supports = function(feature)
         if feature == 'multijob' then return Qbx or PsMultijob() or Multijob() ~= nil end
+        if feature == 'salary' then return Esx or QbFamily end
         if feature == 'gangs' and FN_BRIDGE.Callable(FN_BRIDGE.Setting('gang')) then return true end
 
         return supports(feature)

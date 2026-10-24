@@ -1,5 +1,18 @@
 # fn_bridge changelog
 
+## 1.4.6 (2026-10-24)
+
+Added
+- VEHICLES.Add and VEHICLES.Remove work on vRP. A car goes into vrp_user_vehicles, and Remove takes { model } to pick which car to take, because every car of a vRP character has the same plate.
+- VEHICLES.Traits tells a script how the garage behaves: platePerVehicle is false and onePerModel is true on vRP.
+- FRAMEWORK.Supports('salary') says whether the framework keeps a salary per job grade. That's true on ESX, QBCore and Qbox, and false on ox_core and vRP.
+
+Fixed
+- HOUSING.IsLocked returns false for an unlocked door. It returned nil, so scripts treated an unlocked home as a home without a lock and fn_phone hid the lock button.
+- ox_core and vRP know the unemployed job. Players without a job were reported as unemployed, but GetJobs didn't list it, so scripts refused to set it. Setting it clears the active group on ox_core and the job group on vRP.
+- VEHICLES.Available on vRP no longer returns the table name as a second value, which scripts read as a warning about the garage table.
+- Callbacks over the limit of 120 a second get an empty answer at once, and the script shows its error. The server used to drop them without a reply, so the screen waiting for them hung for five minutes.
+
 ## 1.4.5 (2026-10-18)
 
 Fixed

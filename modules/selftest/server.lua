@@ -441,6 +441,23 @@ local function TierA()
         return available, reason
     end)
 
+    if VEHICLES.Available() and framework == 'vrp' then
+        MySQL.query.await('DELETE FROM vrp_user_vehicles WHERE user_id = ?', { tonumber(one) })
+
+        Check('VEHICLES.Add on vRP, once per model', function()
+            local added = VEHICLES.Add(one, 'adder', Probe.plate)
+            local again, why = VEHICLES.Add(one, 'adder', Probe.plate)
+
+            return added and not again and why == 'owned', tostring(why)
+        end)
+        Check('VEHICLES.Remove on vRP by model', function()
+            local listed = #VEHICLES.List(one)
+            local done, why = VEHICLES.Remove(one, Probe.plate, { model = 'adder' })
+
+            return listed == 1 and done and #VEHICLES.List(one) == 0, ('listed=%d %s'):format(listed, tostring(why))
+        end)
+    end
+
     if VEHICLES.Available() and framework ~= 'vrp' then
         for _, plate in ipairs({ Probe.plate, Probe.plate2 }) do
             local schema = { esx = 'owned_vehicles', qb = 'player_vehicles', qbx = 'player_vehicles', ox = 'vehicles', standalone = 'fn_vehicles' }
@@ -642,7 +659,7 @@ local function TierA()
             { 'interact', function() return B.INTERACT.Has('cuff') == 'hook' end },
             { 'voice', function() return B.VOICE.Name() == 'hook' and B.VOICE.Mumble() == true and B.VOICE.RadioCount(7) == 3 end },
             { 'housing', function()
-                return B.HOUSING.IsLocked('fnbhome:1') == true and B.HOUSING.SetLocked('fnbhome:1', false) == false
+                return B.HOUSING.IsLocked('fnbhome:1') == true and B.HOUSING.SetLocked('fnbhome:1', false) == false and B.HOUSING.IsLocked('fnbhome:1') == false
                     and (B.HOUSING.ForSale()[1] or {}).id == 'hook:fnbsale' and (B.HOUSING.Starters()[1] or {}).id == 'fnbapt'
                     and (B.HOUSING.Resume({ key = 'x' }) or {}).event == 'fnb:enter'
             end },

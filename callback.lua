@@ -15,6 +15,16 @@ if IsDuplicityVersion() then
 
     AddEventHandler('playerDropped', function() spent[source] = nil end)
 
+    local function refuse(src, s, batch, from)
+        if s.n > 400 then return end
+        local ids = {}
+        for i = from, math.min(#batch, from + 63) do
+            local r = batch[i]
+            if type(r) == 'table' and math.type(r[1]) == 'integer' then ids[#ids + 1] = r[1] end
+        end
+        if #ids > 0 then TriggerClientEvent(EVENT, src, -1, ids) end
+    end
+
     RegisterNetEvent(EVENT, function(batch)
         local src = source
         if type(batch) ~= 'table' then return end
@@ -25,7 +35,8 @@ if IsDuplicityVersion() then
             spent[src] = s
         end
         s.n = s.n + #batch
-        if s.n > 120 then return end
+        if s.n > 120 then return refuse(src, s, batch, 1) end
+        if #batch > 40 then refuse(src, s, batch, 41) end
         for i = 1, math.min(#batch, 40) do
             local r = batch[i]
             if type(r) == 'table' and math.type(r[1]) == 'integer' and type(r[2]) == 'string' then
@@ -101,6 +112,15 @@ end
 
 RegisterNetEvent(EVENT, function(id, ...)
     if source == '' then return end
+    if id == -1 then
+        local ids = ...
+        for _, dropped in ipairs(type(ids) == 'table' and ids or {}) do
+            local w = waiting[dropped]
+            waiting[dropped] = nil
+            if w then w.cb() end
+        end
+        return
+    end
     local w = waiting[id]
     if not w then return end
     waiting[id] = nil

@@ -265,7 +265,8 @@ FN_HOUSING.IsLocked = function(id)
     local lock, raw = Lock(id)
     if not lock then return nil end
     local ok, locked = pcall(lock.get, raw)
-    return ok and locked == true or nil
+    if not ok or locked == nil then return nil end
+    return locked == true
 end
 
 FN_HOUSING.SetLocked = function(id, locked, playerId)

@@ -94,6 +94,7 @@ FN_FRAMEWORK.GetJobs = function()
         end
     end
 
+    jobs.unemployed = jobs.unemployed or { name = 'unemployed', label = 'Unemployed', virtual = true, grades = { [0] = { name = 'Unemployed', label = 'Unemployed', grade = 0, job_name = 'unemployed', isBoss = false } } }
     JobCache, JobCacheAt = jobs, GetGameTimer()
 
     return jobs
@@ -266,6 +267,12 @@ FN_FRAMEWORK.SetJob = function(target, jobName, grade)
     grade = math.floor(tonumber(grade) or 0)
     local job = FN_FRAMEWORK.GetJobs()[jobName]
     if not job or not job.grades[grade] then return false end
+
+    if job.virtual then
+        if type(target) ~= 'number' or not OxPlayer(target) then return false end
+
+        return pcall(function() exports.ox_core:CallPlayer(target, 'setActiveGroup') end)
+    end
 
     if type(target) == 'number' then
         if not OxPlayer(target) then return false end

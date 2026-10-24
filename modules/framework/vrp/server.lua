@@ -123,6 +123,7 @@ FN_FRAMEWORK.GetJobs = function()
         if next(jobs) then break end
     end
 
+    jobs.unemployed = jobs.unemployed or { name = 'unemployed', label = 'Unemployed', virtual = true, grades = { [0] = { name = 'Unemployed', label = 'Unemployed', grade = 0, job_name = 'unemployed', isBoss = false } } }
     JobCache = jobs
 
     return jobs
@@ -282,6 +283,12 @@ FN_FRAMEWORK.SetJob = function(target, jobName)
 
     local userId = type(target) == 'number' and UserId(target) or tonumber(target)
     if not userId then return false end
+
+    if FN_FRAMEWORK.GetJobs()[jobName].virtual then
+        local current = JobName(userId)
+        if current and current ~= 'unemployed' then Vrp('removeUserGroup', userId, current) end
+        return true
+    end
 
     Vrp('addUserGroup', userId, jobName)
 

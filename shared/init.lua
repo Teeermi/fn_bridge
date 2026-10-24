@@ -332,7 +332,7 @@ FN_BRIDGE.FrameworkOptional = {
 
 FN_BRIDGE.VehiclesContract = {
     'Available', 'GarageColumn', 'Get', 'List', 'IsPlateTaken', 'IsStored', 'GetProps', 'Add', 'Remove', 'SetOwner',
-    'TransferAll', 'SetPlate', 'SetProps', 'SetState', 'Impound', 'JobColumn', 'ListJob', 'SetJob',
+    'TransferAll', 'SetPlate', 'SetProps', 'SetState', 'Impound', 'JobColumn', 'ListJob', 'SetJob', 'Traits',
 }
 
 FN_BRIDGE.ServerOnly = {
