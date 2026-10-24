@@ -6,6 +6,7 @@ local MISS = '__fn_bridge_miss'
 
 if IsDuplicityVersion() then
     local handlers, spent = {}, {}
+    local born, first = GetGameTimer(), nil
 
     local function reply(src, ...)
         local ok, packed = pcall(msgpack.pack, { ... })
@@ -40,19 +41,21 @@ if IsDuplicityVersion() then
         for i = 1, math.min(#batch, 40) do
             local r = batch[i]
             if type(r) == 'table' and math.type(r[1]) == 'integer' and type(r[2]) == 'string' then
-                local fn, args = handlers[r[2]], type(r[3]) == 'table' and r[3] or {}
-                if not fn then
-                    TriggerClientEvent(EVENT, src, r[1], MISS)
-                else
-                    Citizen.CreateThreadNow(function()
-                        local res = table.pack(xpcall(fn, debug.traceback, src, table.unpack(args, 1, math.min(math.tointeger(args.n) or #args, 32))))
-                        if not res[1] then
-                            print(('^1SCRIPT ERROR: %s^0'):format(res[2]))
-                            return TriggerClientEvent(EVENT, src, r[1])
-                        end
-                        reply(src, r[1], table.unpack(res, 2, res.n))
-                    end)
-                end
+                local args = type(r[3]) == 'table' and r[3] or {}
+                Citizen.CreateThreadNow(function()
+                    local fn = handlers[r[2]]
+                    while not fn and GetGameTimer() < (first and first + 2000 or born + 30000) do
+                        Wait(100)
+                        fn = handlers[r[2]]
+                    end
+                    if not fn then return TriggerClientEvent(EVENT, src, r[1], MISS) end
+                    local res = table.pack(xpcall(fn, debug.traceback, src, table.unpack(args, 1, math.min(math.tointeger(args.n) or #args, 32))))
+                    if not res[1] then
+                        print(('^1SCRIPT ERROR: %s^0'):format(res[2]))
+                        return TriggerClientEvent(EVENT, src, r[1])
+                    end
+                    reply(src, r[1], table.unpack(res, 2, res.n))
+                end)
             end
         end
     end)
@@ -61,6 +64,7 @@ if IsDuplicityVersion() then
         await = ox.await,
         register = function(name, fn)
             handlers[name] = fn
+            first = first or GetGameTimer()
             return ox.register(name, fn)
         end,
     }, getmetatable(ox))
@@ -125,7 +129,7 @@ RegisterNetEvent(EVENT, function(id, ...)
     if not w then return end
     waiting[id] = nil
     if ... == MISS then
-        foreign[w.name] = true
+        foreign[w.name] = GetGameTimer() + 30000
         return ox(w.name, false, w.cb, table.unpack(w.args, 1, w.args.n))
     end
     w.cb(...)
@@ -133,7 +137,7 @@ end)
 
 local function await(name, delay, ...)
     if not due(name, delay) then return end
-    if foreign[name] then return ox.await(name, false, ...) end
+    if (foreign[name] or 0) > GetGameTimer() then return ox.await(name, false, ...) end
     local p = promise.new()
     send(name, function(...) p:resolve(table.pack(...)) end, function()
         p:reject(("callback event '%s' timed out"):format(name))
@@ -146,7 +150,7 @@ lib.callback = setmetatable({ await = await, register = ox.register }, {
     __call = function(_, name, delay, cb, ...)
         if not cb then return await(name, delay, ...) end
         if not due(name, delay) then return end
-        if foreign[name] then return ox(name, false, cb, ...) end
+        if (foreign[name] or 0) > GetGameTimer() then return ox(name, false, cb, ...) end
         send(name, cb, nil, ...)
     end,
 })

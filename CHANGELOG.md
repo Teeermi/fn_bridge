@@ -1,5 +1,11 @@
 # fn_bridge changelog
 
+## 1.4.8 (2026-10-24)
+
+Fixed
+- Callbacks sent while a script is still loading now wait for it. A script started by a loader, such as a license or escrow loader, registers its callbacks a few seconds after it starts. Players who called in those seconds were moved to plain ox_lib callbacks for the rest of their session, and servers that limit ox_lib callbacks dropped those calls, so apps hung on a spinner.
+- A callback name that belongs to another resource is checked again after 30 seconds, so one miss no longer lasts the whole session.
+
 ## 1.4.7 (2026-10-24)
 
 Added

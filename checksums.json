@@ -1,10 +1,10 @@
 {
- "callback.lua": "8b76e457",
+ "callback.lua": "9c72475b",
  "client.lua": "86eff66b",
  "fn_bridge_custom/client.lua": "811c9dc5",
  "fn_bridge_custom/fxmanifest.lua": "377d4c58",
  "fn_bridge_custom/server.lua": "811c9dc5",
- "fxmanifest.lua": "7d3fb76a",
+ "fxmanifest.lua": "11c50dd7",
  "import.lua": "662d5725",
  "modules/appearance/client.lua": "1840161f",
  "modules/appearance/server.lua": "979f3773",
