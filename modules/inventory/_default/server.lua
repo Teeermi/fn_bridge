@@ -111,6 +111,8 @@ FN_INVENTORY.CanCarry = function(playerId, itemName, count)
     return FN_FRAMEWORK.Call(xPlayer, 'canCarryItem', itemName, count or 1) ~= false
 end
 
+FN_BRIDGE.SupportedWhen('INVENTORY', 'SetMetadata', function() return FN_BRIDGE.IsFramework('qb') end)
+
 FN_INVENTORY.SetMetadata = function(playerId, slot, metadata)
     if not FN_BRIDGE.IsFramework('qb') then return UnsupportedWithoutInventory('SetMetadata')() end
 
@@ -143,6 +145,16 @@ FN_INVENTORY.RemoveLoadout = function(playerId, weaponName)
     local xPlayer = EsxPlayer(playerId)
     if not FN_FRAMEWORK.Call(xPlayer, 'hasWeapon', weaponName) then return false end
     FN_FRAMEWORK.Call(xPlayer, 'removeWeapon', weaponName)
+
+    return true
+end
+
+FN_INVENTORY.AddLoadout = function(playerId, weaponName, ammo)
+    if not FN_BRIDGE.IsFramework('esx') or type(weaponName) ~= 'string' then return false end
+
+    local xPlayer = EsxPlayer(playerId)
+    if not xPlayer or FN_FRAMEWORK.Call(xPlayer, 'hasWeapon', weaponName) then return false end
+    FN_FRAMEWORK.Call(xPlayer, 'addWeapon', weaponName, math.max(0, math.floor(tonumber(ammo) or 0)))
 
     return true
 end

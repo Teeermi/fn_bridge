@@ -23,6 +23,7 @@ Config = {
     Dispatch = Convar('dispatch', 'auto'),
     Phone = Convar('phone', 'auto'),
     Voice = Convar('voice', 'auto'),
+    Weather = Convar('weather', 'auto'),
     AdminGroups = admins,
     Counter = {
         dutyAware = false,

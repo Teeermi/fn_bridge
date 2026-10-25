@@ -485,6 +485,7 @@ Every item comes back like this:
 | `SetMaxWeight` | `playerId`, `grams` | boolean (ox_inventory) |
 | `GetLoadout` | `playerId` | array of `{ name, label, ammo }`: weapons ESX keeps outside the inventory, `{}` everywhere else |
 | `RemoveLoadout` | `playerId`, `weaponName` | boolean, `false` when the weapon is not in the ESX loadout |
+| `AddLoadout` | `playerId`, `weaponName`, `ammo` | boolean, ESX without an inventory resource only; `false` when the player already has it |
 
 **Client**
 
@@ -651,6 +652,7 @@ end
 | `Get` | client | none | `{ name, modes = { { index, distance, name } }, range, distance, custom, cycle, radio, call }` or `nil` |
 | `SetRange` | client | `index` | `true` when the talk range is now that mode |
 | `SetVolume` | client | `'radio'` or `'call'`, `0..100` | `true` when the voice resource took it |
+| `Ghost` | client | `on` | `true` when the change took. With pma-voice the local player then talks only to players whose `fn_ghost` state bag is `true` |
 
 Phone calls: put every player in a call on the same `callId` with `SetCall`. fn_bridge keeps who is in which call and joins them the way the voice script wants it (a call channel on pma-voice and mumble-voip, player pairs on SaltyChat and YACA). `MuteCall` silences a player for the other side only; on pma-voice and mumble-voip the others' clients turn that player down while people standing next to them (4 m) still hear them. A player who drops leaves the call and the radio.
 
@@ -659,6 +661,17 @@ Radio is the primary channel. A radio item script on top (mm_radio, qb-radio) ke
 Another voice script plugs in with the `voice` hook: `{ call = fn(playerId, callId), radio = fn(playerId, channel), getRadio = fn(playerId), radioCount = fn(channel), mute = fn(playerId, on), mumble = true }` on the server (`call` and `radio` are the ones that matter, `mute` returns `true` when it muted), and `{ radioEnabled = fn(on), radioTalk = fn(on) }` on the client.
 
 `Get`, `SetRange` and `SetVolume` work with pma-voice and SaltyChat. `custom` is set while a script overrides the range, `SetRange` then returns `false`. `cycle` is `false` when the server turned range cycling off (`voice_enableProximityCycle 0`). SaltyChat modes come from its `config.json` `VoiceRanges` and have no `name`, it has no call volume (`call` is `nil`), and its radio volume above 100% reads as 100.
+
+## FN_BRIDGE.WEATHER (server)
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Name` | none | `'hook'`, `'Renewed-Weathersync'`, `'qb-weathersync'` or `false` |
+| `Weather` | none | `'clear'`, `'rain'`, `'storm'`, `'snow'` or `'fog'`, and the raw GTA name as a second value; `nil` without a weather script |
+| `Time` | none | the in-game hour 0 to 23, or `nil` |
+| `OnWeather` | `cb` | `true`. `cb(kind, raw)` runs when the weather changes |
+
+Rain covers `RAIN`, `CLEARING` and `RAIN_HALLOWEEN`; storm is `THUNDER`; snow covers `SNOW`, `SNOWLIGHT`, `BLIZZARD`, `XMAS` and `SNOW_HALLOWEEN`; fog covers `FOGGY` and `SMOG`. Everything else is clear. esx_weather keeps the weather per zone on each client and has no export, so it cannot be read; plug your own script in with the `weather` hook. `nil` means no weather script, and a script that needs weather then runs its own.
 
 ## FN_BRIDGE.PREFS (client)
 
@@ -685,12 +698,16 @@ Values: `lang` (a language code, `''` follows the server), `clock` (`'24'`, `'12
 | `Reviver` | server | none | the resource `Revive` goes to, or `false` for the built-in revive |
 | `Ambulances` | server | none | ambulance scripts running next to yours: a death provider, `'hook'` for a `revive` hook, esx_ambulancejob, qb-ambulancejob, qbx_medical, wasabi_ambulance, ars_ambulancejob, ak47_ambulancejob |
 | `Provide` | both | `impl` or `nil` | `true` when registered |
+| `SetArena` | server | `playerId`, arena id (number or string) or `false` | `true` when set |
+| `InArena` | both | `playerId` on the server | the arena id, or `false` |
 
 Without a provider, `GetState` reads QBCore and Qbox metadata (`inlaststand`, `isdead`), then state bags (`inlaststand`, `laststand`, `isDown`, `down` mean down; `isDead`, `IsDead`, `isdead`, `dead`, `Dead` mean dead), then the ped's health. That covers esx_ambulancejob, qb-ambulancejob, qbx_medical, ox_core and most paid ambulance scripts without an adapter.
 
 `Revive` asks, in order: the provider, the calling script's `Config.Bridge.revive(playerId)` hook, qbx_medical, qb-ambulancejob, esx_ambulancejob, and last a plain resurrect in place. It then clears the framework flag.
 
 `SetFlag` writes the flag other scripts and character screens read: QBCore and Qbox metadata `isdead` (and clears `inlaststand`), ESX `users.is_dead` when the column exists, and the `isDead` state bag (ox_core saves it to `characters.isDead`).
+
+A player marked with `SetArena` is in a minigame. Their deaths fire the server event `fn_bridge/server/arenaDied` (`playerId`, `{ state, killer, weapon, coords, cause, arena }`) and nothing else: no `fn_bridge/server/playerDied` and no client `fn_bridge:deathChanged`. The client reads the flag from the `fn_arena` state bag; a client that writes that bag itself gets it set back by the server.
 
 A death script that owns the whole flow registers itself with `Provide({ GetState = fn, Revive = fn })` on the server (`GetState(playerId)`) and `Provide({ GetState = fn })` on the client. Every `GetState`, `IsDown` and `Revive` call then goes to it. The registration ends when that resource stops.
 

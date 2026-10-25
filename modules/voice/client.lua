@@ -132,6 +132,23 @@ FN_VOICE.SetVolume = function(kind, value)
     return pcall(function() exports['pma-voice'][fn](exports['pma-voice'], math.floor(value + 0.5)) end)
 end
 
+FN_VOICE.Ghost = function(on)
+    local hook = Hook('ghost')
+    if hook then
+        local ok, done = pcall(hook, on == true)
+        return ok and done == true
+    end
+    if FN_VOICE.Name() ~= 'pma-voice' then return false end
+    if not on then return (pcall(function() exports['pma-voice']:resetProximityCheck() end)) end
+    return (pcall(function()
+        exports['pma-voice']:overrideProximityCheck(function(player)
+            if Player(GetPlayerServerId(player)).state.fn_ghost ~= true then return false end
+            local range = tonumber(Proximity().distance) or 3.0
+            return #(GetEntityCoords(GetPlayerPed(player)) - GetEntityCoords(PlayerPedId())) < range
+        end)
+    end))
+end
+
 FN_VOICE.GetRadio = function()
     local name = FN_VOICE.Name()
     if name == 'pma-voice' then return math.floor(tonumber(LocalPlayer.state.radioChannel) or 0) end

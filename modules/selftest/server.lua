@@ -596,6 +596,13 @@ local function TierA()
         return ok and guards, ok and ('%s, mumble %s'):format(tostring(V.Name()), tostring(V.Mumble())) or err
     end)
 
+    Check('WEATHER kinds, time and broken adapters', function()
+        local ok, err = FN_WEATHER_PROBE()
+        local W = FN_BRIDGE.WEATHER
+
+        return ok, ok and ('%s, %s, hour %s'):format(tostring(W.Name()), tostring(W.Weather()), tostring(W.Time())) or err
+    end)
+
     Check('PHONE number changes', function()
         local P = FN_BRIDGE.PHONE
         local numbers, why, by = P.Numbers()

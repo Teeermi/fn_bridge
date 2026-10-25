@@ -312,7 +312,7 @@ FN_BRIDGE.SocietyContract = {
 
 FN_BRIDGE.InventoryContract = {
     client = { 'OpenInventory', 'GetItemCount', 'HasItem', 'GetItemData' },
-    server = { 'GetPlayerItems', 'AddItem', 'RemoveItem', 'GetItemCount', 'HasItem', 'GetItemSlot', 'SetMetadata', 'CanCarry', 'ItemExists', 'DefineItems', 'GetMaxWeight', 'SetMaxWeight', 'GetLoadout', 'RemoveLoadout',
+    server = { 'GetPlayerItems', 'AddItem', 'RemoveItem', 'GetItemCount', 'HasItem', 'GetItemSlot', 'SetMetadata', 'CanCarry', 'ItemExists', 'DefineItems', 'GetMaxWeight', 'SetMaxWeight', 'GetLoadout', 'RemoveLoadout', 'AddLoadout',
         'RegisterStash', 'GetStashItems', 'AddStashItem', 'RemoveStashItem', 'ClearStash', 'OpenStash', 'OnStash', 'OnShopBuy', 'RegisterUsable' },
 }
 
@@ -342,6 +342,7 @@ FN_BRIDGE.ServerOnly = {
     STAFF = { 'Host', 'Call' },
     DOORS = { 'Name', 'List', 'Get', 'IsLocked', 'SetLocked', 'Allow' },
     HTTP = { 'Header', 'Tunnel', 'Origin' },
+    WEATHER = { 'Name', 'Weather', 'Time', 'OnWeather' },
 }
 
 FN_BRIDGE.PickerContract = { 'Start', 'Await', 'Stop', 'IsActive' }

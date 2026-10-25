@@ -1,5 +1,16 @@
 # fn_bridge changelog
 
+## 1.5.0 (2026-10-25)
+
+Added
+- WEATHER module on the server. WEATHER.Weather returns clear, rain, storm, snow or fog, WEATHER.Time returns the in-game hour, and WEATHER.OnWeather calls you when the weather changes. It reads Renewed-Weathersync and qb-weathersync. Another weather script plugs in with the weather hook, and setr fn_bridge:weather picks one or turns it off.
+- DEATH.SetArena and DEATH.InArena mark a player as being in an event arena. A death in the arena fires fn_bridge/server/arenaDied instead of fn_bridge/server/playerDied and fn_bridge:deathChanged, so kill feeds, gang wars and EMS alerts ignore minigame deaths. A client that sets the flag on itself is reverted.
+- VOICE.Ghost on the client. With pma-voice, a player out of a minigame then talks only to other players who are out. Other voice scripts plug in with a ghost function in the voice hook.
+- INVENTORY.AddLoadout gives an ESX player a weapon back into the loadout when the server has no inventory script.
+
+Fixed
+- IsSupported('INVENTORY', 'SetMetadata') returned true on ESX without an inventory script, where item metadata does not exist. Scripts that asked first could lose data they stored on an item.
+
 ## 1.4.9 (2026-10-25)
 
 Added

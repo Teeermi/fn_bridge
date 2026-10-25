@@ -69,6 +69,10 @@ FN_DEATH.IsDown = function()
     return FN_DEATH.GetState() ~= 'alive'
 end
 
+FN_DEATH.InArena = function()
+    return LocalPlayer.state.fn_arena or false
+end
+
 FN_DEATH.Provide = function(impl)
     local resource = GetInvokingResource()
     if not resource then return false end
@@ -107,7 +111,7 @@ CreateThread(function()
         if now ~= was then
             local before = was
             was = now
-            TriggerEvent('fn_bridge:deathChanged', now, before)
+            if not FN_DEATH.InArena() then TriggerEvent('fn_bridge:deathChanged', now, before) end
             TriggerServerEvent('fn_bridge:died', now, now ~= 'alive' and GetPedCauseOfDeath(PlayerPedId()) or 0)
         end
     end

@@ -174,7 +174,29 @@ AddEventHandler('onResourceStop', function(resource)
     if Provider and Provider.resource == resource then Provider = nil end
 end)
 
-local LastHit, Reported = {}, {}
+local LastHit, Reported, Arena = {}, {}, {}
+
+FN_DEATH.SetArena = function(playerId, id)
+    playerId = Online(playerId)
+    if not playerId then return false end
+    id = (type(id) == 'number' or type(id) == 'string') and id or nil
+    Arena[playerId] = id
+    Player(playerId).state:set('fn_arena', id or false, true)
+
+    return true
+end
+
+FN_DEATH.InArena = function(playerId)
+    return Arena[tonumber(playerId) or -1] or false
+end
+
+AddStateBagChangeHandler('fn_arena', nil, function(bagName, _, value, _, replicated)
+    if not replicated then return end
+    local playerId = GetPlayerFromStateBagName(bagName)
+    if not playerId or playerId == 0 then return end
+    local want = Arena[playerId] or false
+    if value ~= want then Player(playerId).state:set('fn_arena', want, true) end
+end)
 
 AddEventHandler('weaponDamageEvent', function(sender, data)
     sender = tonumber(sender)
@@ -202,15 +224,21 @@ RegisterNetEvent('fn_bridge:died', function(state, cause)
     local fresh = hit and os.time() - hit.at <= 10 and GetPlayerName(hit.killer) and hit
     local ped = GetPlayerPed(victim)
 
-    TriggerEvent('fn_bridge/server/playerDied', victim, {
+    local ctx = {
         state = state,
         killer = fresh and fresh.killer or false,
         weapon = fresh and fresh.weapon or false,
         coords = ped ~= 0 and GetEntityCoords(ped) or nil,
         cause = math.tointeger(tonumber(cause)) or 0,
-    })
+    }
+    if Arena[victim] then
+        ctx.arena = Arena[victim]
+        TriggerEvent('fn_bridge/server/arenaDied', victim, ctx)
+        return
+    end
+    TriggerEvent('fn_bridge/server/playerDied', victim, ctx)
 end)
 
 AddEventHandler('playerDropped', function()
-    LastHit[source], Reported[source] = nil, nil
+    LastHit[source], Reported[source], Arena[source] = nil, nil, nil
 end)
