@@ -1,5 +1,11 @@
 # fn_bridge changelog
 
+## 1.4.9 (2026-10-25)
+
+Added
+- KEYS.Name returns the key script running on the server, or false.
+- With fn_garages started, KEYS.Give, KEYS.Remove and KEYS.SetLocked also go to its key system, so keys handed out by jobs, rentals and other scripts work with fnGarages locks.
+
 ## 1.4.8 (2026-10-24)
 
 Fixed
