@@ -72,6 +72,7 @@ Finish = function()
     FN_BRIDGE.FRAMEWORK = FN_FRAMEWORK
     FN_BRIDGE.INVENTORY = ResolveInventory()
     FN_BRIDGE.NOTIFY = FN_NOTIFY
+    FN_BRIDGE.PROGRESS = FN_PROGRESS
     FN_BRIDGE.TARGET = ResolveTarget()
     FN_BRIDGE.HELPER = FN_HELPER
     FN_BRIDGE.PICKER = FN_PICKER
@@ -92,7 +93,7 @@ Finish = function()
     FN_BRIDGE.INTERACT = FN_INTERACT
     for _, key in ipairs({ 'Has', 'Do', 'Is' }) do FN_INTERACT[key] = FN_BRIDGE.UnsupportedFunction('INTERACT', key, 'server side only') end
 
-    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'NOTIFY', 'TARGET', 'HELPER', 'PICKER', 'KEYS', 'DEATH', 'VOICE', 'PREFS', 'CHARACTERS', 'APPEARANCE', 'INTERACT' }) do
+    for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'NOTIFY', 'PROGRESS', 'TARGET', 'HELPER', 'PICKER', 'KEYS', 'DEATH', 'VOICE', 'PREFS', 'CHARACTERS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
 

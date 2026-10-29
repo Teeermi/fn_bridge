@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-version '1.5.0'
+version '1.6.0'
 author 'fivenuts.dev | https://fivenuts.dev'
 description 'fn_bridge - Bridge for fivenuts scripts'
 
@@ -26,6 +26,7 @@ client_scripts {
     'modules/characters/client.lua',
     'modules/helper/client.lua',
     'modules/notify/client.lua',
+    'modules/progress/client.lua',
     'modules/death/client.lua',
     'modules/dispatch/client.lua',
     'modules/phone/client.lua',
@@ -46,6 +47,7 @@ client_scripts {
     'modules/inventory/qs-inventory/client.lua',
     'modules/inventory/ps-inventory/client.lua',
     'modules/inventory/qb-inventory/client.lua',
+    'modules/inventory/fn_inventory/client.lua',
     'modules/inventory/ox_inventory/client.lua',
     'modules/inventory/_default/client.lua',
     'client.lua',
@@ -94,6 +96,7 @@ server_scripts {
     'modules/inventory/qs-inventory/server.lua',
     'modules/inventory/ps-inventory/server.lua',
     'modules/inventory/qb-inventory/server.lua',
+    'modules/inventory/fn_inventory/server.lua',
     'modules/inventory/ox_inventory/server.lua',
     'modules/inventory/core_inventory/server.lua',
     'modules/inventory/origen_inventory/server.lua',

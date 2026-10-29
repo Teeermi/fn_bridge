@@ -624,6 +624,15 @@ FN_FRAMEWORK.UseItem = function(playerId, itemName)
     if not ok then print(('^1qbx_core could not use item^7 %s'):format(tostring(itemName))) end
 end
 
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local callback = CoreValue('CanUseItem', itemName)
+    if not callback then return nil end
+
+    return function(playerId, item)
+        callback(playerId, item)
+    end
+end
+
 FN_FRAMEWORK.GetItemLabel = function(itemName)
     local ok, item = pcall(function()
         return exports['ox_inventory']:Items(itemName)

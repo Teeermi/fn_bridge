@@ -191,6 +191,7 @@ end)
 | --- | --- | --- | --- |
 | `notify` | client | `message, kind, time` | Notifications. `kind` is `"info"`, `"success"` or `"error"` |
 | `showHelp`, `hideHelp` | client | `message, position, options` / nothing | Help text in the corner |
+| `progress` | client | a function `options` returning `true` when finished, or a table `{ Bar, Cancel, IsActive }` | Progress bars. `options` has the ox_lib fields (`duration`, `label`, `canCancel`, `disable`, `anim`, `prop`) |
 | `seatbelt` | client | nothing, returns `true` when buckled | Seatbelt state |
 | `revive` | server | `playerId` | Reviving a player |
 | `name` | server | `playerId`, returns a string | Character name |

@@ -148,7 +148,7 @@ has no adapter for is plugged in once in `fn_bridge_custom` with `INVENTORY.*` h
 | | |
 | --- | --- |
 | Framework | ESX Legacy 1.9+, QBCore, QBox, ox_core, vRP, standalone |
-| Inventory | ox_inventory, qb-inventory, ps-inventory, qs-inventory, codem-inventory, tgiann-inventory, ak47_inventory, core_inventory, origen_inventory, framework's own |
+| Inventory | fn_inventory, ox_inventory, qb-inventory, ps-inventory, qs-inventory, codem-inventory, tgiann-inventory, ak47_inventory, core_inventory, origen_inventory, framework's own |
 | Target | ox_target, qb-target |
 | Notifications | okokNotify, mythic_notify, pNotify, t-notify, vms_notifyv2, brutal_notify, g-notifications, r_notify, wasabi_notify, wasabi_uikit, lation_ui, is_ui, ox_lib, framework's own, your function |
 | Text UI | jg-textui, okokTextUI, cd_drawtextui, lab-HintUI, ox_lib, framework's own, your function |

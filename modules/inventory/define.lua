@@ -12,6 +12,12 @@ end
 FN_INVENTORY.DefineItems = function(items)
     items = type(items) == 'table' and items or {}
 
+    if FN_BRIDGE.IsInventory('fn_inventory') then
+        local ok, missing = pcall(function() return exports['fn_inventory']:DefineItems(items) end)
+
+        return { kind = 'fn_inventory', missing = ok and type(missing) == 'table' and missing or Missing(items) }
+    end
+
     if FN_BRIDGE.IsFramework('qb') and not FN_BRIDGE.IsInventory('ox_inventory') then
         for _, item in ipairs(items) do
             pcall(function()

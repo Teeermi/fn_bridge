@@ -89,11 +89,12 @@ FN_BRIDGE.INVENTORY    -- items
 FN_BRIDGE.NOTIFY       -- notifications, help text, chat
 FN_BRIDGE.TARGET       -- target zones (client)
 FN_BRIDGE.PICKER       -- pick a spot in the world (client)
+FN_BRIDGE.PROGRESS     -- progress bar (client)
 FN_BRIDGE.HELPER       -- commands, logs, small utilities
 FN_BRIDGE.SOCIETY      -- job money (server)
 ```
 
-All seven exist on both sides. If one has nothing behind it (like `TARGET` on the server), calling it logs a message and returns `false` instead of erroring.
+All eight exist on both sides. If one has nothing behind it (like `TARGET` on the server), calling it logs a message and returns `false` instead of erroring.
 
 Every function is listed in [API.md](API.md). If it isn't there, don't rely on it.
 

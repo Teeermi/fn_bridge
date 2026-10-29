@@ -37,6 +37,24 @@ AddEventHandler("ox_inventory:itemList", function(items)
     FN_FRAMEWORK.obj.Items = items
 end)
 
+FN_FRAMEWORK.InventoryLink = function()
+    if FN_BRIDGE.inventoryName ~= 'fn_inventory' and FN_BRIDGE.inventoryName ~= 'ox_inventory' then return nil end
+    local ok, config = pcall(function() return FN_FRAMEWORK.obj.GetConfig() end)
+    if ok and type(config) == 'table' and (config.CustomInventory == 'ox' or config.OxInventory == true) then return { ok = true } end
+    for _, file in ipairs({ 'shared/config/main.lua', 'config.lua' }) do
+        local text = LoadResourceFile('es_extended', file)
+        local line = 0
+        for row in (text or ''):gmatch('[^\n]*\n?') do
+            line = line + 1
+            if row:find('^%s*Config%.CustomInventory%s*=') or row:find('^%s*Config%.OxInventory%s*=') then
+                return { ok = false, file = 'es_extended/'..file, line = line, text = row:find('CustomInventory') and 'Config.CustomInventory = "ox"' or 'Config.OxInventory = true' }
+            end
+        end
+    end
+
+    return { ok = false, file = 'es_extended' }
+end
+
 FN_FRAMEWORK.GetFrameworkName = function()
     return 'esx'
 end
@@ -405,20 +423,40 @@ FN_FRAMEWORK.SetJobDuty = function(playerId, dutyStatus)
 end
 
 FN_FRAMEWORK.RegisterUsableItem = function(itemName, callback)
-    FN_FRAMEWORK.obj.RegisterUsableItem(itemName, function(playerId, _, item)
-        local xPlayer = FN_FRAMEWORK.GetPlayerFromId(playerId)
-        if not xPlayer then return end
+    local function Register()
+        FN_FRAMEWORK.obj.RegisterUsableItem(itemName, function(playerId, _, item)
+            local xPlayer = FN_FRAMEWORK.GetPlayerFromId(playerId)
+            if not xPlayer then return end
 
-        callback(xPlayer, { name = itemName, slot = type(item) == 'table' and tonumber(item.slot) or nil, metadata = type(item) == 'table' and item.metadata or nil })
+            callback(xPlayer, { name = itemName, slot = type(item) == 'table' and tonumber(item.slot) or nil, metadata = type(item) == 'table' and item.metadata or nil })
+        end)
+    end
+
+    if FN_FRAMEWORK.obj then return Register() end
+
+    CreateThread(function()
+        local deadline = GetGameTimer() + 30000
+        while not FN_FRAMEWORK.obj and GetGameTimer() < deadline do Wait(100) end
+        if FN_FRAMEWORK.obj then Register() end
     end)
 end
 
 FN_FRAMEWORK.UseItem = function(playerId, itemName)
-    FN_FRAMEWORK.obj.UseItem(playerId, itemName)
+    if FN_FRAMEWORK.obj then FN_FRAMEWORK.obj.UseItem(playerId, itemName) end
+end
+
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local esx = FN_FRAMEWORK.obj
+    local list = esx and esx.GetUsableItems and esx.GetUsableItems()
+    if type(list) ~= 'table' or not list[itemName] then return nil end
+
+    return function(playerId, item)
+        esx.UseItem(playerId, itemName, item)
+    end
 end
 
 FN_FRAMEWORK.GetItemLabel = function(itemName)
-    local allItems = FN_FRAMEWORK.obj.Items
+    local allItems = FN_FRAMEWORK.obj and FN_FRAMEWORK.obj.Items
     if not allItems then return itemName end
     if not allItems[itemName] then return itemName end
 
@@ -428,6 +466,7 @@ end
 FN_FRAMEWORK.GetPlayers = function()
     local players = {}
     local esx = FN_FRAMEWORK.obj
+    if not esx then return players end
     local ok, list = pcall(esx.GetPlayers)
 
     if not ok or type(list) ~= 'table' then
@@ -655,6 +694,17 @@ FN_FRAMEWORK.GetNeeds = function(playerId)
     end
 
     return needs
+end
+
+FN_FRAMEWORK.AddNeeds = function(playerId, needs)
+    for name, value in pairs(type(needs) == 'table' and needs or {}) do
+        value = tonumber(value)
+        if value and value ~= 0 and (name == 'hunger' or name == 'thirst' or name == 'stress') then
+            TriggerClientEvent(value > 0 and 'esx_status:add' or 'esx_status:remove', playerId, name, math.floor(math.abs(value) * 10000))
+        end
+    end
+
+    return true
 end
 
 FN_FRAMEWORK.GetPlayTime = function(playerId)

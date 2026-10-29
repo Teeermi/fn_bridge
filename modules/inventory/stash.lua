@@ -1,7 +1,8 @@
 local I = FN_INVENTORY
 if not I then return end
 
-local Ox, Qb = FN_BRIDGE.IsInventory('ox_inventory'), FN_BRIDGE.IsInventory('qb-inventory')
+local Ox, Qb = FN_BRIDGE.IsInventory('ox_inventory') or FN_BRIDGE.IsInventory('fn_inventory'), FN_BRIDGE.IsInventory('qb-inventory')
+local OxRes = FN_BRIDGE.IsInventory('fn_inventory') and 'fn_inventory' or 'ox_inventory'
 local Stashes, Hooks, Usable = {}, {}, {}
 
 local function Id(value)
@@ -69,7 +70,7 @@ if Ox or Qb then
         }
         Stashes[id] = stash
 
-        if Ox then return select(2, Export('ox_inventory', 'RegisterStash', id, stash.label, stash.slots, stash.weight, stash.owner, stash.groups, opts.coords)) end
+        if Ox then return select(2, Export(OxRes, 'RegisterStash', id, stash.label, stash.slots, stash.weight, stash.owner, stash.groups, opts.coords)) end
 
         return select(2, Export('qb-inventory', 'CreateInventory', id, { label = stash.label, maxweight = stash.weight, slots = stash.slots }))
     end
@@ -77,7 +78,7 @@ if Ox or Qb then
     I.GetStashItems = function(id)
         id = Id(id)
         if not id then return {} end
-        if Ox then return FN_BRIDGE.NormalizeItems(Export('ox_inventory', 'GetInventoryItems', id)) end
+        if Ox then return FN_BRIDGE.NormalizeItems(Export(OxRes, 'GetInventoryItems', id)) end
 
         Export('qb-inventory', 'CreateInventory', id, FN_STASH.Data(id))
         local inventory = Export('qb-inventory', 'GetInventory', id)
@@ -88,7 +89,7 @@ if Ox or Qb then
     I.AddStashItem = function(id, itemName, count, metadata)
         id, count = Id(id), Count(count)
         if not id or not count or type(itemName) ~= 'string' then return false end
-        if Ox then return Export('ox_inventory', 'AddItem', id, itemName, count, metadata) and true or false end
+        if Ox then return Export(OxRes, 'AddItem', id, itemName, count, metadata) and true or false end
 
         Export('qb-inventory', 'CreateInventory', id, FN_STASH.Data(id))
 
@@ -98,7 +99,7 @@ if Ox or Qb then
     I.RemoveStashItem = function(id, itemName, count, metadata)
         id, count = Id(id), Count(count)
         if not id or not count or type(itemName) ~= 'string' then return false end
-        if Ox then return Export('ox_inventory', 'RemoveItem', id, itemName, count, metadata) and true or false end
+        if Ox then return Export(OxRes, 'RemoveItem', id, itemName, count, metadata) and true or false end
 
         local slot
         for _, item in ipairs(I.GetStashItems(id)) do
@@ -114,7 +115,7 @@ if Ox or Qb then
     I.ClearStash = function(id)
         id = Id(id)
         if not id then return false end
-        if Ox then return select(2, Export('ox_inventory', 'ClearInventory', id)) end
+        if Ox then return select(2, Export(OxRes, 'ClearInventory', id)) end
 
         Export('qb-inventory', 'CreateInventory', id, FN_STASH.Data(id))
 
@@ -124,7 +125,7 @@ if Ox or Qb then
     I.OpenStash = function(playerId, id)
         playerId, id = tonumber(playerId), Id(id)
         if not playerId or not id or not GetPlayerName(playerId) then return false end
-        if Ox then return select(2, Export('ox_inventory', 'forceOpenInventory', playerId, 'stash', id)) end
+        if Ox then return select(2, Export(OxRes, 'forceOpenInventory', playerId, 'stash', id)) end
 
         return select(2, Export('qb-inventory', 'OpenInventory', playerId, id, FN_STASH.Data(id)))
     end
@@ -140,7 +141,7 @@ if Ox then
     I.OnStash = function(prefix, cb)
         if (prefix ~= nil and not Id(prefix)) or not FN_BRIDGE.Callable(cb) then return false end
 
-        local id = Export('ox_inventory', 'registerHook', 'swapItems', function(p)
+        local id = Export(OxRes, 'registerHook', 'swapItems', function(p)
             local put = p.toType == 'stash'
             local stash = put and p.toInventory or p.fromType == 'stash' and p.fromInventory or nil
             if type(stash) ~= 'string' or (prefix and stash:sub(1, #prefix) ~= prefix) then return end
@@ -158,7 +159,7 @@ if Ox then
     I.OnShopBuy = function(cb)
         if not FN_BRIDGE.Callable(cb) then return false end
 
-        local id = Export('ox_inventory', 'registerHook', 'buyItem', function(p)
+        local id = Export(OxRes, 'registerHook', 'buyItem', function(p)
             pcall(cb, { playerId = p.source, shop = p.shopType, item = p.itemName, count = p.count, price = p.totalPrice or p.price, currency = p.currency or 'money' })
         end, {})
         if not id then return false end
@@ -205,7 +206,7 @@ I.RegisterUsable = function(itemName, predicate, onUse)
 end
 
 FN_STASH.Release = function(resource)
-    for _, id in ipairs(Hooks[resource] or {}) do Export('ox_inventory', 'removeHooks', id) end
+    for _, id in ipairs(Hooks[resource] or {}) do Export(OxRes, 'removeHooks', id) end
     Hooks[resource] = nil
 end
 

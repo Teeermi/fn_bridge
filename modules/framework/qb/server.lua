@@ -519,6 +519,17 @@ FN_FRAMEWORK.UseItem = function(playerId, itemName)
     if not ok then print(('^1qb-core could not use item^7 %s'):format(tostring(itemName))) end
 end
 
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local functions = FN_FRAMEWORK.obj and FN_FRAMEWORK.obj.Functions
+    local ok, callback = pcall(function() return functions and functions.CanUseItem(itemName) end)
+    if not ok or not callback then return nil end
+
+    return function(playerId, item)
+        item = type(item) == 'table' and item or {}
+        callback(playerId, { name = itemName, amount = item.count, info = item.metadata or {}, slot = item.slot, label = item.label })
+    end
+end
+
 FN_FRAMEWORK.GetItemLabel = function(itemName)
     local sharedItems = FN_FRAMEWORK.obj?.Shared?.Items
     local item = sharedItems and sharedItems[itemName]

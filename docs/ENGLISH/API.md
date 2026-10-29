@@ -352,6 +352,24 @@ end, false, { help = 'Give a crate to a player', params = { { name = 'id', help 
 - `options` on `ShowHelpText` (like `icon`) only work on some resources. The message always shows.
 - `Chat` with `playerId` `-1` or `nil` sends to everyone. `color` is `{ r, g, b }`.
 
+## FN_BRIDGE.PROGRESS (client)
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Bar` | `options` | `true` when the bar finished, `false` when the player cancelled it or another bar is running |
+| `Cancel` | none | `true` when a bar was running |
+| `IsActive` | none | `true` while a bar runs |
+| `Name` | none | the resource that draws bars for the calling script, `'ox_lib'`, or `false` |
+
+`options` takes the ox_lib fields: `duration` (ms), `label`, `canCancel` (default `true`), `useWhileDead` (default `false`), `disable`, `anim`, `prop`, and `circle = true` for a circle instead of a bar. A progress script plugs in with `FN_BRIDGE.Provide('progress', fn)` or `{ Bar = fn, Cancel = fn, IsActive = fn }` on the client, or one script sets `Config.Bridge.progress`. `Bar` gets the same `options` and returns `true` when finished. Without a hook the bar comes from ox_lib.
+
+```lua
+exports.fn_bridge:Provide('progress', {
+    Bar = function(o) return exports['my_progress']:Start(o.label, o.duration, o.canCancel) end,
+    Cancel = function() exports['my_progress']:Stop() end,
+})
+```
+
 ## FN_BRIDGE.TARGET (client)
 
 | Function | Args | Returns |
@@ -521,6 +539,15 @@ Every item comes back like this:
 - `RemoveItem` on qb-inventory and codem-inventory works by slot only.
 - `OpenInventory` does nothing on tgiann-inventory.
 - Client `GetItemCount` / `HasItem` on qs-inventory and tgiann-inventory ignore metadata.
+
+### Foreign scripts and the framework's own inventory
+
+Some frameworks call their own inventory code, so scripts written for them miss your inventory resource. `FN_BRIDGE.FRAMEWORK.InventoryLink()` (server) says whether the framework passes those calls on. It returns `nil` when there's nothing to check, `{ ok = true }` when it's linked, or `{ ok = false, file, line?, text?, fix?, restart?, cfg? }`.
+
+- **ESX:** es_extended passes items to ox_inventory when its config has `Config.CustomInventory = "ox"` (or `Config.OxInventory = true` on older versions). ESX 1.10 and newer turn this on by themselves when a resource named `ox_inventory` exists, fnInventory's shim included. When it's off, `file` and `line` point at the setting and `text` is the value to put there.
+- **vRP:** `FN_BRIDGE.FRAMEWORK.LinkInventory()` saves `vrp/modules/fn_bridge_inventory.lua`. After a restart, `vRP.giveInventoryItem`, `vRP.tryGetInventoryItem`, `vRP.getInventoryItemAmount` and `vRP.getInventory` go to `INVENTORY` for players who are online, and to vRP's own inventory for everyone else. `fix = true` means fn_bridge can save the file, `restart = true` means it's saved and waits for a restart. FXServer only lets a resource write into another one with a permission line in `server.cfg`, and `cfg` holds that line: `add_filesystem_permission fn_bridge write vrp`. Without it `LinkInventory()` returns `false`. It needs a vRP whose `fxmanifest.lua` loads `modules/*`, as vRPex does. Otherwise copy `modules/framework/vrp/inventory.lua` from fn_bridge into a file vRP loads.
+
+`exports.fn_bridge:InventoryCall(name, ...)` runs `AddItem`, `RemoveItem`, `GetItemCount` or `GetPlayerItems` from `INVENTORY` for code that can't load the bridge. It returns `false` when the server has no inventory resource, otherwise `true` and the result.
 
 ### Without an inventory resource
 

@@ -320,6 +320,8 @@ FN_FRAMEWORK.GetGang = function()
     return false
 end
 
+FN_FRAMEWORK.AddNeeds = function() return false end
+
 FN_FRAMEWORK.GetNeeds = function()
     return {}
 end
@@ -470,6 +472,16 @@ FN_FRAMEWORK.RegisterUsableItem = function(itemName, callback)
     Usable[itemName] = callback
 end
 
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local callback = Usable[itemName]
+    if not callback then return nil end
+
+    return function(playerId, item)
+        local player = FN_FRAMEWORK.GetPlayerFromId(playerId)
+        if player then callback(player, type(item) == 'table' and item or { name = itemName }) end
+    end
+end
+
 FN_FRAMEWORK.UseItem = function(playerId, itemName)
     local callback = Usable[itemName]
     local player = callback and FN_FRAMEWORK.GetPlayerFromId(playerId)
@@ -600,6 +612,29 @@ end)
 AddEventHandler('playerDropped', function()
     FN_JOBS.Forget(source)
 end)
+
+local LinkFile = 'modules/fn_bridge_inventory.lua'
+
+local function LinkGlob()
+    local manifest = LoadResourceFile('vrp', 'fxmanifest.lua') or LoadResourceFile('vrp', '__resource.lua') or ''
+
+    return manifest:find("['\"]modules/%*['\"]") ~= nil
+end
+
+FN_FRAMEWORK.InventoryLink = function()
+    if not FN_BRIDGE.inventoryName then return nil end
+    if Vrp('fnBridgeInventory') == true then return { ok = true } end
+    local saved = LoadResourceFile('vrp', LinkFile) ~= nil
+
+    return { ok = false, file = 'vrp/'..LinkFile, fix = LinkGlob() and not saved, restart = saved, cfg = 'add_filesystem_permission '..GetCurrentResourceName()..' write vrp' }
+end
+
+FN_FRAMEWORK.LinkInventory = function()
+    if not FN_BRIDGE.inventoryName or not LinkGlob() then return false end
+    local source = LoadResourceFile(GetCurrentResourceName(), 'modules/framework/vrp/inventory.lua')
+
+    return source ~= nil and SaveResourceFile('vrp', LinkFile, source, -1) and true or false
+end
 
 lib.callback.register('fn_bridge/server/checkPermissions', FN_FRAMEWORK.CheckPermissions)
 

@@ -105,6 +105,9 @@ FN_FRAMEWORK.GetJobs = function() return {} end
 FN_FRAMEWORK.GetJobMembers = function() return {} end
 FN_FRAMEWORK.GetGang = function() return false end
 FN_FRAMEWORK.GetNeeds = function() return {} end
+
+FN_FRAMEWORK.AddNeeds = function() return false end
+
 FN_FRAMEWORK.GetPlayTime = function() return false end
 FN_FRAMEWORK.GetPhoneNumber = function() return false end
 FN_FRAMEWORK.SetPhoneNumber = function() return false end
@@ -151,6 +154,16 @@ local Usable = {}
 
 FN_FRAMEWORK.RegisterUsableItem = function(itemName, callback)
     Usable[itemName] = callback
+end
+
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local callback = Usable[itemName]
+    if not callback then return nil end
+
+    return function(playerId, item)
+        local player = FN_FRAMEWORK.GetPlayerFromId(playerId)
+        if player then callback(player, type(item) == 'table' and item or { name = itemName }) end
+    end
 end
 
 FN_FRAMEWORK.UseItem = function(playerId, itemName)

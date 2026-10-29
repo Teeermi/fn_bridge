@@ -337,6 +337,19 @@ FN_FRAMEWORK.GetNeeds = function(playerId)
     }
 end
 
+FN_FRAMEWORK.AddNeeds = function(playerId, needs)
+    if not OxPlayer(playerId) or type(needs) ~= 'table' then return false end
+
+    for name, value in pairs(needs) do
+        value = tonumber(value)
+        if value and value ~= 0 and (name == 'hunger' or name == 'thirst' or name == 'stress') then
+            Call(playerId, value > 0 and 'addStatus' or 'removeStatus', name, math.abs(value))
+        end
+    end
+
+    return true
+end
+
 FN_FRAMEWORK.GetPlayTime = function()
     return false
 end
@@ -515,6 +528,16 @@ exports('useItem', function(event, item, inventory, slot)
 
     callback(player, { name = item.name, slot = tonumber(slot), metadata = item.metadata })
 end)
+
+FN_FRAMEWORK.GetUsable = function(itemName)
+    local callback = Usable[itemName]
+    if not callback then return nil end
+
+    return function(playerId, item)
+        local player = FN_FRAMEWORK.GetPlayerFromId(playerId)
+        if player then callback(player, type(item) == 'table' and item or { name = itemName }) end
+    end
+end
 
 FN_FRAMEWORK.UseItem = function(playerId, itemName)
     local callback = Usable[itemName]

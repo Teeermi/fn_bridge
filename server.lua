@@ -11,6 +11,14 @@ end)
 
 exports('Provide', FN_BRIDGE.Provide)
 
+local InventoryCalls = { AddItem = true, RemoveItem = true, GetItemCount = true, GetPlayerItems = true }
+
+exports('InventoryCall', function(name, ...)
+    if not isReady or not InventoryCalls[name] or not FN_BRIDGE.inventoryName or not FN_BRIDGE.INVENTORY then return false end
+
+    return true, FN_BRIDGE.INVENTORY[name](...)
+end)
+
 FN_BRIDGE.IsReady = function()
     return isReady
 end
@@ -68,6 +76,7 @@ Finish = function()
     FN_BRIDGE.TARGET = FN_BRIDGE.UnavailableNamespace('TARGET', 'client side only', FN_BRIDGE.TargetContract)
     FN_BRIDGE.HELPER = FN_HELPER
     FN_BRIDGE.PICKER = FN_BRIDGE.UnavailableNamespace('PICKER', 'client side only', FN_BRIDGE.PickerContract)
+    FN_BRIDGE.PROGRESS = FN_BRIDGE.UnavailableNamespace('PROGRESS', 'client side only', { 'Name', 'Bar', 'Cancel', 'IsActive' })
     FN_BRIDGE.KEYS = FN_KEYS
     FN_BRIDGE.CHARACTERS = Resolve('CHARACTERS', FN_CHARACTERS, FN_BRIDGE.CharactersContract.server, FN_BRIDGE.frameworkName)
     FN_BRIDGE.DISPATCH = FN_DISPATCH

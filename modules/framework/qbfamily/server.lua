@@ -199,6 +199,25 @@ FN_FRAMEWORK.GetNeeds = function(playerId)
     }
 end
 
+FN_FRAMEWORK.AddNeeds = function(playerId, needs)
+    local player = Raw(playerId)
+    if not player or type(needs) ~= 'table' then return false end
+
+    local metadata = player.PlayerData.metadata or {}
+    for name, value in pairs(needs) do
+        value = tonumber(value)
+        if value and value ~= 0 and (name == 'hunger' or name == 'thirst' or name == 'stress') and metadata[name] ~= nil then
+            player.Functions.SetMetaData(name, math.max(0, math.min(100, (tonumber(metadata[name]) or 0) + value)))
+        end
+    end
+
+    metadata = player.PlayerData.metadata or {}
+    if needs.hunger or needs.thirst then TriggerClientEvent('hud:client:UpdateNeeds', playerId, metadata.hunger, metadata.thirst) end
+    if needs.stress then TriggerClientEvent('hud:client:UpdateStress', playerId, metadata.stress) end
+
+    return true
+end
+
 FN_FRAMEWORK.GetPlayTime = function()
     return false
 end

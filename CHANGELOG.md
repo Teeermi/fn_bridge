@@ -1,5 +1,20 @@
 # fn_bridge changelog
 
+## 1.6.0 (2026-10-29)
+
+Added
+- fnInventory support. When fn_inventory is on the server, INVENTORY uses it first, stashes and hooks included, and DefineItems adds script items to it right away.
+- FRAMEWORK.GetUsable returns the use callback a script registered for an item, on every framework. An inventory calls it when a player uses that item.
+- FRAMEWORK.AddNeeds changes hunger, thirst and stress on ESX, QBCore, Qbox and ox_core.
+- PROGRESS module on the client. PROGRESS.Bar shows a progress bar from ox_lib, and a server's own progress script takes over every fivenuts bar with the progress hook.
+- FRAMEWORK.InventoryLink tells whether the framework passes its own inventory calls to your inventory script. On ESX it checks Config.CustomInventory and, when it's off, gives the file and line to change.
+- On vRP, FRAMEWORK.LinkInventory saves a small file into vrp/modules. After a restart, scripts that call vRP.giveInventoryItem, tryGetInventoryItem, getInventoryItemAmount and getInventory through Proxy reach your inventory script instead of vRP's own. It works on vRP builds that load modules/*, such as vRPex, and needs add_filesystem_permission fn_bridge write vrp in server.cfg. InventoryLink returns that line.
+- The InventoryCall export runs AddItem, RemoveItem, GetItemCount and GetPlayerItems from INVENTORY for code that can't load the bridge.
+
+Fixed
+- On ESX, FRAMEWORK.GetPlayers threw an error when fn_bridge started before es_extended.
+- On ESX, usable items registered before es_extended finished loading threw an error and never worked. They are now registered as soon as ESX is ready.
+
 ## 1.5.0 (2026-10-25)
 
 Added

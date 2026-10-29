@@ -150,6 +150,7 @@ local FrameworkOrder = {
 }
 
 local InventoryOrder = {
+    { name = 'fn_inventory', resource = 'fn_inventory' },
     { name = 'ox_inventory', resource = 'ox_inventory' },
     { name = 'qb-inventory', resource = 'qb-inventory' },
     { name = 'ps-inventory', resource = 'ps-inventory' },
@@ -328,6 +329,7 @@ FN_BRIDGE.FrameworkContract = {
 FN_BRIDGE.FrameworkOptional = {
     'GetJobGrades', 'GetJobOffline', 'CreateJob', 'SetJobGrades', 'DeleteJob', 'GetPlayerJobs', 'SetActiveJob', 'AddPlayerJob',
     'GetGangs', 'GetGangMembers', 'SetGang', 'RemoveGang', 'CreateGang', 'DeleteGang', 'GetInsurance', 'SetCharacter',
+    'GetUsable', 'AddNeeds',
 }
 
 FN_BRIDGE.VehiclesContract = {
