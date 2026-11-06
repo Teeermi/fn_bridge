@@ -10,7 +10,7 @@ if IsDuplicityVersion() then
 
     local function reply(src, ...)
         local ok, packed = pcall(msgpack.pack, { ... })
-        if ok and #packed > 65536 and pcall(TriggerLatentClientEvent, EVENT, src, 2097152, ...) then return end
+        if ok and #packed > 65536 and pcall(TriggerLatentClientEvent, EVENT, src, 524288, ...) then return end
         TriggerClientEvent(EVENT, src, ...)
     end
 
@@ -73,6 +73,7 @@ end
 
 local TIMEOUT = GetConvarInt('ox:callbackTimeout', 300000)
 local BIG = 4096
+local lane = 0
 local seq, waiting, queue, queued, timers, foreign = 0, {}, nil, 0, {}, {}
 
 local function flush()
@@ -97,7 +98,15 @@ local function send(name, cb, late, ...)
     local ok, packed = pcall(msgpack.pack, call)
     local size = ok and #packed or 0
     if size > BIG then
-        TriggerLatentServerEvent(EVENT, 262144, { call })
+        local now = GetGameTimer()
+        local at = math.max(lane, now)
+        if at - now > 15000 then
+            local w = waiting[id]
+            waiting[id] = nil
+            return w.cb()
+        end
+        lane = at + size // 120
+        SetTimeout(at - now, function() TriggerLatentServerEvent(EVENT, 153600, { call }) end)
     else
         if not queue then
             queue = {}

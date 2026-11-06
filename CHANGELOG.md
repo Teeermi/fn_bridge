@@ -1,5 +1,19 @@
 # fn_bridge changelog
 
+## 1.6.1 (2026-11-06)
+
+Added
+- The fn_bridge:radioTalk convar names the push to talk command of a modified voice script. RadioTalk returns false when the voice script has no such command.
+- The impounds hook lets a server's impound script list and release cars for other scripts.
+
+Changed
+- With screencapture on protocol nui above 300000 images_bps, the bridge uses screenshot-basic when it runs. Otherwise it warns once in the console and lowers photo quality.
+- lib.callback calls with large arguments go one after another at a lower rate.
+
+Fixed
+- Screenshots upload in parts, one at a time, under the FXServer limit of 150 latent packets a second.
+- On ESX, GetNeeds also reads esx_status:update, so forks that keep status elsewhere still report hunger and thirst.
+
 ## 1.6.0 (2026-10-29)
 
 Added

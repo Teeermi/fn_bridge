@@ -675,7 +675,7 @@ end
 | `GetRadio` | client | none | radio channel as a number, `0` when off, `false` without a voice resource |
 | `SetRadio` | client | `channel` | boolean, `0` leaves the radio |
 | `RadioEnabled` | client | `on` | `true`; pma-voice only lets a player talk on the radio while this is on |
-| `RadioTalk` | client | `on` | `true` when push to talk on the radio started or stopped |
+| `RadioTalk` | client | `on` | `true` when push to talk on the radio started or stopped, `false` when the voice script has no such command. `setr fn_bridge:radioTalk` names the command of a modified voice script |
 | `Get` | client | none | `{ name, modes = { { index, distance, name } }, range, distance, custom, cycle, radio, call }` or `nil` |
 | `SetRange` | client | `index` | `true` when the talk range is now that mode |
 | `SetVolume` | client | `'radio'` or `'call'`, `0..100` | `true` when the voice resource took it |

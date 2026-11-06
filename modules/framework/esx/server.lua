@@ -683,17 +683,33 @@ local function Percent(value)
     return value and math.max(0, math.min(100, math.floor(value + 0.5))) or nil
 end
 
-FN_FRAMEWORK.GetNeeds = function(playerId)
-    local xPlayer = XPlayer(playerId)
+local function ReadNeeds(list)
     local needs = {}
 
-    for _, status in ipairs(Call(xPlayer, 'get', 'status') or {}) do
-        if status.name == 'hunger' or status.name == 'thirst' or status.name == 'stress' then
+    for i = 1, math.min(type(list) == 'table' and #list or 0, 32) do
+        local status = list[i]
+        if type(status) == 'table' and (status.name == 'hunger' or status.name == 'thirst' or status.name == 'stress') then
             needs[status.name] = Percent(status.percent or (tonumber(status.val) or 0) / 10000)
         end
     end
 
     return needs
+end
+
+local reportedNeeds = {}
+
+RegisterNetEvent('esx_status:update', function(list)
+    reportedNeeds[source] = ReadNeeds(list)
+end)
+
+AddEventHandler('playerDropped', function()
+    reportedNeeds[source] = nil
+end)
+
+FN_FRAMEWORK.GetNeeds = function(playerId)
+    local needs = ReadNeeds(Call(XPlayer(playerId), 'get', 'status'))
+
+    return next(needs) and needs or reportedNeeds[playerId] or needs
 end
 
 FN_FRAMEWORK.AddNeeds = function(playerId, needs)

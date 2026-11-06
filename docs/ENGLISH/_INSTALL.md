@@ -79,6 +79,7 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:dispatch` | `auto` | Which resource gets emergency alerts, `none` turns them off |
 | `fn_bridge:phone` | `auto` | Which phone gets notifications, mail and texts from scripts and keeps the numbers scripts change, `none` turns them off |
 | `fn_bridge:voice` | `auto` | Which voice script carries phone calls and the radio: `pma-voice`, `saltychat`, `yaca-voice`, `mumble-voip`, or `none` |
+| `fn_bridge:radioTalk` | from `fn_bridge:voice` | Push to talk command of a modified voice script, without the `+`. Set it when your pma-voice renamed `+radiotalk` |
 | `fn_bridge:weather` | `auto` | Which weather script the WEATHER module reads: `Renewed-Weathersync`, `qb-weathersync`, or `none` |
 | `fn_bridge:admins` | `admin,superadmin,god` | Your staff groups, see [Admins](#admins) |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
@@ -104,6 +105,8 @@ A player with the `fn_bridge.admin` ACE is an admin too, which helps when your s
 ### Photo uploads
 
 Scripts with photos (fn_multichar, fn_pausemenu) take the screenshot on the server and upload it from there, so no token or webhook ever reaches a player. They need `screenshot-basic` or `screencapture` running, and a place to store the files: [fivedock.dev](https://fivedock.dev). Either run the `fivedock` agent resource, which uploads with your server's own fivedock connection and needs nothing else, or put a fivedock API token in `server.cfg` once and every script uses it:
+
+If you use `screencapture` with `protocol 'nui'`, keep `images_bps` at 300000 or lower in its `fxmanifest.lua`. FXServer disconnects a player who sends more than 150 latent packets a second ("latent event packet overflow"), and each packet is about 2 KB. Above that value fn_bridge switches to `screenshot-basic` if it is running. Otherwise it prints one warning and caps photo quality at 0.5.
 
 ```cfg
 set fn_bridge:upload_token "your-fivedock-token"
@@ -210,6 +213,7 @@ end)
 | `jail` | server | `{ send, release, get, offline }` | Your prison script. `offline(identifier)` returns minutes left for a character on the select screen |
 | `communityService` | server | `playerId, actions, opts` | Community service |
 | `impound` | server | `plate, opts, vehicle` | Impounding a car in your garage script |
+| `impounds` | server | `{ list, release }`. `list(playerId)` returns rows `{ plate, model, price, reason, depot, depotLabel }`, `release(playerId, plate, depot)` charges the player and returns `true`, or `false` and `'not_enough_money'` | Cars held by your police or impound script, shown in the phone's Garage |
 | `gangAccount` | server | `gang`, returns the account name and `true` for dirty money | Where gang money is kept |
 | `societyAccount` | server | `job`, returns the account name | A company account with a name of its own |
 | `doors` | server | `{ list, isLocked, setLocked, allow }` | Your door lock script |

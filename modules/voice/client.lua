@@ -181,11 +181,19 @@ end
 
 local Talk = { ['pma-voice'] = 'radiotalk', saltychat = 'primaryRadio' }
 
+local function hasCommand(name)
+    for _, command in ipairs(GetRegisteredCommands()) do
+        if command.name == name then return true end
+    end
+    return false
+end
+
 FN_VOICE.RadioTalk = function(on)
     local hook = Hook('radioTalk')
     if hook then return pcall(hook, on == true) end
-    local command = Talk[FN_VOICE.Name() or '']
-    if not command then return false end
+    local command = GetConvar('fn_bridge:radioTalk', '')
+    if command == '' then command = Talk[FN_VOICE.Name() or ''] end
+    if not command or not hasCommand('+' .. command) then return false end
     ExecuteCommand((on and '+' or '-') .. command)
     return true
 end

@@ -44,8 +44,24 @@ FN_MEDIA.IsUrl = function(url)
     return type(url) == 'string' and #url <= 512 and url:match('^https://[%w%.%-]+/[^%s"\'()<>\\]*$') ~= nil
 end
 
+local capWarned = false
+
+local function CapSafe()
+    if GetResourceMetadata('screencapture', 'protocol', 0) ~= 'nui' then return true end
+    return (tonumber(GetResourceMetadata('screencapture', 'images_bps', 0)) or 500000) <= 300000
+end
+
 FN_MEDIA.Capturer = function()
-    if Started('screencapture') then return 'screencapture' end
+    if Started('screencapture') then
+        local safe = CapSafe()
+        if safe or not Started('screenshot-basic') then
+            if not safe and not capWarned then
+                capWarned = true
+                print("^3[fn_bridge] screencapture uses protocol 'nui' above 300000 images_bps. FXServer drops players over 150 latent packets a second. Set images_bps '200000' or protocol 'http' in its fxmanifest.lua.^0")
+            end
+            return 'screencapture'
+        end
+    end
     if Started('screenshot-basic') then return 'screenshot-basic' end
 
     return false
@@ -71,11 +87,19 @@ FN_MEDIA.Ready = function(opts)
 end
 
 local shots, shotSeq = {}, 0
+local SHOT_CHUNK = 131072
 
-RegisterNetEvent('fn_bridge:shotData', function(token, data)
+RegisterNetEvent('fn_bridge:shotData', function(token, i, n, part)
+    local src = source
     local shot = shots[token]
-    if not shot or shot.player ~= source then return end
-    shot.done(type(data) == 'string' and #data <= 16777216 and data or false)
+    if not shot or shot.player ~= src then return end
+    local parts = shot.parts
+    if type(part) ~= 'string' or #part > SHOT_CHUNK or i ~= #parts + 1 or math.type(n) ~= 'integer' or i > n then return shot.done(false) end
+    shot.size = shot.size + #part
+    if shot.size > 16777216 then return shot.done(false) end
+    parts[i] = part
+    if i == n then return shot.done(table.concat(parts)) end
+    TriggerClientEvent('fn_bridge:shotNext', src, token, i + 1)
 end)
 
 FN_MEDIA.Capture = function(playerId, opts)
@@ -86,17 +110,18 @@ FN_MEDIA.Capture = function(playerId, opts)
     opts = Opts(opts)
     local encoding = Encodings[opts.encoding] and opts.encoding or 'webp'
     local quality = tonumber(opts.quality) or 0.92
+    if capturer == 'screencapture' and not CapSafe() then quality = math.min(quality, 0.5) end
     local data = Await(function(done)
         if capturer == 'screencapture' then
             exports.screencapture:serverCapture(playerId, { encoding = encoding, quality = quality }, function(d) done(d) end, 'base64')
         else
             shotSeq = shotSeq + 1
             local token = shotSeq
-            shots[token] = { player = playerId, done = function(d) shots[token] = nil done(d) end }
-            SetTimeout(30000, function() shots[token] = nil end)
+            shots[token] = { player = playerId, parts = {}, size = 0, done = function(d) shots[token] = nil done(d) end }
+            SetTimeout(45000, function() shots[token] = nil end)
             TriggerClientEvent('fn_bridge:shot', playerId, token, { encoding = encoding, quality = quality })
         end
-    end, tonumber(opts.timeout) or 12000)
+    end, tonumber(opts.timeout) or 30000)
 
     if type(data) ~= 'string' or data == '' then return false end
     if not data:find('^data:image/') then data = ('data:image/%s;base64,%s'):format(encoding == 'jpg' and 'jpeg' or encoding, data) end
