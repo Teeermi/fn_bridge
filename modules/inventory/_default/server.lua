@@ -48,7 +48,9 @@ FN_INVENTORY.AddItem = function(playerId, itemName, count, metadata, slot)
 
     if FN_BRIDGE.IsFramework('esx') then
         local xPlayer = EsxPlayer(playerId)
-        return select(2, FN_FRAMEWORK.Call(xPlayer, 'addInventoryItem', itemName, count, metadata))
+        local result, called = FN_FRAMEWORK.Call(xPlayer, 'addInventoryItem', itemName, count, metadata)
+
+        return called and result ~= false
     end
 
     local player = QbPlayer(playerId)
@@ -62,7 +64,9 @@ FN_INVENTORY.RemoveItem = function(playerId, itemName, count, metadata, slot)
 
     if FN_BRIDGE.IsFramework('esx') then
         local xPlayer = EsxPlayer(playerId)
-        return select(2, FN_FRAMEWORK.Call(xPlayer, 'removeInventoryItem', itemName, count, metadata))
+        local result, called = FN_FRAMEWORK.Call(xPlayer, 'removeInventoryItem', itemName, count, metadata)
+
+        return called and result ~= false
     end
 
     local player = QbPlayer(playerId)

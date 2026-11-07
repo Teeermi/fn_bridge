@@ -58,11 +58,14 @@ local Scripts = {
         end },
 }
 
-for _, script in ipairs(Scripts) do FN_KNOWN[script.resource] = true end
+for _, script in ipairs(Scripts) do FN_KNOWN[script.resource] = 'interact' end
+
+local Searchable = { ox_inventory = true, fn_inventory = true, ['qb-inventory'] = true, ['ps-inventory'] = true }
 
 local function Search(playerId, target)
-    if FN_BRIDGE.IsInventory('ox_inventory') then return pcall(function() exports.ox_inventory:forceOpenInventory(playerId, 'player', target) end) end
-    if FN_BRIDGE.IsInventory('qb-inventory') then return pcall(function() exports['qb-inventory']:OpenInventoryById(playerId, target) end) end
+    local name = FN_BRIDGE.inventoryName
+    if name == 'ox_inventory' or name == 'fn_inventory' then return pcall(function() exports[name]:forceOpenInventory(playerId, 'player', target) end) end
+    if name == 'qb-inventory' or name == 'ps-inventory' then return pcall(function() exports[name]:OpenInventoryById(playerId, target) end) end
 
     return false
 end
@@ -75,7 +78,7 @@ local function Pick(kind)
         if script[kind] and GetResourceState(script.resource) == 'started' then return script[kind], script.resource end
     end
 
-    if kind == 'search' and (FN_BRIDGE.IsInventory('ox_inventory') or FN_BRIDGE.IsInventory('qb-inventory')) then return Search, FN_BRIDGE.inventoryName end
+    if kind == 'search' and Searchable[FN_BRIDGE.inventoryName] then return Search, FN_BRIDGE.inventoryName end
 end
 
 X.Has = function(kind)

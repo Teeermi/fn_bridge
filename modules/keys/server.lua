@@ -2,6 +2,8 @@ FN_KEYS = {}
 
 local Known = { 'qbx_vehiclekeys', 'qb-vehiclekeys', 'qs-vehiclekeys', 'Renewed-Vehiclekeys', 'MrNewbVehicleKeys', 'wasabi_carlock', 'mk_vehiclekeys', 't1ger_keys', 'ak47_vehiclekeys', 'vehicles_keys', 'F_RealCarKeysSystem', 'mVehicle', 'cd_garage', 'okokGarage' }
 
+for _, resource in ipairs(Known) do FN_KNOWN[resource] = 'keys' end
+
 local function Garages()
     return GetResourceState('fn_garages') == 'started' and GetInvokingResource() ~= 'fn_garages'
 end

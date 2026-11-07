@@ -32,6 +32,42 @@ local function ReportMissingFramework()
     print('^1the '..FN_BRIDGE.frameworkName..' adapter never finished loading^7 - fn_bridge is running without a framework and every fivenuts script will fail to start.')
 end
 
+local function ReportForcedResources()
+    for convar, value in pairs({ dispatch = Config.Dispatch, phone = Config.Phone, voice = Config.Voice, weather = Config.Weather }) do
+        if value ~= 'auto' and value ~= 'none' and GetResourceState(value) == 'missing' then
+            print(('^3setr fn_bridge:%s is "%s" but no resource has that name, so this part stays off. Use auto, none or the name of a resource.^7'):format(convar, value))
+        end
+    end
+end
+
+local function ItemCount(count)
+    if count == nil then return 1 end
+
+    count = tonumber(count)
+    count = count and math.floor(count)
+
+    return count and count >= 1 and count <= 1000000000 and count or nil
+end
+
+local function GuardInventory(inventory)
+    FN_BRIDGE.Guarded(inventory, 'INVENTORY.AddItem', 'AddItem', function(adapter, playerId, itemName, count, ...)
+        count = ItemCount(count)
+        if not count then return false end
+
+        return adapter(playerId, itemName, count, ...)
+    end)
+
+    FN_BRIDGE.Guarded(inventory, 'INVENTORY.RemoveItem', 'RemoveItem', function(adapter, playerId, itemName, count, metadata, ...)
+        count = ItemCount(count)
+        if not count then return false end
+
+        local ok, have = pcall(inventory.GetItemCount, playerId, itemName, metadata)
+        if ok and tonumber(have) and tonumber(have) < count then return false end
+
+        return adapter(playerId, itemName, count, metadata, ...)
+    end)
+end
+
 local function Resolve(namespace, target, contract, adapterName)
     if not target then return FN_BRIDGE.UnavailableNamespace(namespace, 'no '..namespace:lower()..' adapter loaded', contract) end
 
@@ -102,6 +138,8 @@ Finish = function()
     for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'HTTP', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'WEATHER', 'JAIL', 'BILLING', 'COINS', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
+    GuardInventory(FN_BRIDGE.INVENTORY)
+    ReportForcedResources()
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetName', 'name')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetJob', 'job')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetPhoneNumber', 'phone')

@@ -12,11 +12,7 @@ RegisterServerEvent('fn_bridge/server/qb-inventory/openInventory', function(inve
     local allowed = FN_STASH and FN_STASH.CanOpen(_source, inventory, data)
     if not allowed then return end
 
-    if inventory == 'player' then
-        exports['qb-inventory']:OpenInventoryById(_source, allowed)
-    else
-        exports['qb-inventory']:OpenInventory(_source, allowed, FN_STASH.Data(allowed))
-    end
+    exports['qb-inventory']:OpenInventory(_source, allowed, FN_STASH.Data(allowed))
 end)
 
 FN_INVENTORY.GetPlayerItems = function(playerId)

@@ -3,7 +3,7 @@ FN_COINS = {}
 local C = FN_COINS
 local Shop = 'fn_itemshop'
 
-FN_KNOWN[Shop] = true
+FN_KNOWN[Shop] = 'coins'
 
 local function Amount(value)
     local n = math.tointeger(tonumber(value))

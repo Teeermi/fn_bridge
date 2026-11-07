@@ -2,7 +2,7 @@ FN_HELPER = {
     Players = {}
 }
 
-for _, resource in ipairs({ 'LegacyFuel', 'cdn-fuel', 'ps-fuel', 'lj-fuel', 'okokGasStation', 'ti_fuel', 'x-fuel', 'ox_fuel', 'qbx_seatbelt', 'qb-smallresources', 'esx_cruisecontrol' }) do FN_KNOWN[resource] = true end
+for _, resource in ipairs({ 'LegacyFuel', 'cdn-fuel', 'ps-fuel', 'lj-fuel', 'okokGasStation', 'ti_fuel', 'x-fuel', 'ox_fuel', 'qbx_seatbelt', 'qb-smallresources', 'esx_cruisecontrol' }) do FN_KNOWN[resource] = 'helper' end
 
 local savePrint = print
 FN_HELPER.print = function(...)
@@ -97,7 +97,7 @@ FN_HELPER.RegisterCommand = function(command, groups, callback, allowConsole, su
     if type(command) ~= 'string' or command == '' then return print('RegisterCommand needs a command name.') end
     if not FN_BRIDGE.IsCallable(callback) then return print('RegisterCommand for /'..command..' needs a callback.') end
 
-    local allowed = FN_HELPER.NormalizeGroups(groups)
+    local allowed = FN_HELPER.NormalizeGroups(type(groups) == 'string' and { groups } or groups)
 
     RegisterCommand(command, function(playerId, args, raw)
         playerId = tonumber(playerId) or 0
@@ -108,7 +108,7 @@ FN_HELPER.RegisterCommand = function(command, groups, callback, allowConsole, su
             return FN_HELPER.SafeCall(callback, 0, args or {}, raw)
         end
 
-        if allowed and not (FN_FRAMEWORK and FN_FRAMEWORK.CheckPermissions(playerId, allowed)) then
+        if groups and not (allowed and FN_FRAMEWORK and FN_FRAMEWORK.CheckPermissions(playerId, allowed)) then
             local denied = type(deniedMessage) == 'string' and deniedMessage ~= '' and deniedMessage or 'You are not allowed to use /'..command..'.'
 
             return FN_NOTIFY.Notify(playerId, denied, 'error')
@@ -162,12 +162,17 @@ FN_HELPER.SetPlayerBucket = function(playerId, bucket)
     SetPlayerRoutingBucket(playerId, bucket)
 end
 
+local Reported = {}
+
 RegisterNetEvent('fn_bridge/server/banPlayer', function(reason)
     local playerId = source
-    if not playerId or playerId == 0 then return end
+    if not playerId or playerId == 0 or Reported[playerId] then return end
 
-    FN_HELPER.BanPlayer(playerId, 'spoofed a net event guarded by fn_bridge ('..tostring(reason)..')')
+    Reported[playerId] = true
+    FN_HELPER.BanPlayer(playerId, 'spoofed a net event guarded by fn_bridge ('..tostring(reason):sub(1, 64)..')')
 end)
+
+AddEventHandler('playerDropped', function() Reported[source] = nil end)
 
 FN_HELPER.GetIdentifiers = function(playerId)
     local identifiers = {}

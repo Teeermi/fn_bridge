@@ -112,6 +112,38 @@ FN_BRIDGE.Hookable = function(target, name, key)
     target[name] = wrapper
 end
 
+FN_BRIDGE.Guarded = function(target, key, name, guard)
+    local adapter = target[name]
+    local wrapper = function(...) return guard(adapter, ...) end
+
+    Hooked[wrapper] = { adapter = adapter, key = key }
+    target[name] = wrapper
+end
+
+local Fallback = { GetItemCount = 0, GetMoney = 0, GetPlayerItems = {}, GetStashItems = {}, GetLoadout = {}, GetVehicleCatalog = {}, GetItemList = {} }
+local Failed = {}
+
+local function Safe(key, name, fn, ...)
+    local result = table.pack(pcall(fn, ...))
+    if result[1] then return table.unpack(result, 2, result.n) end
+
+    if not Failed[key] then
+        Failed[key] = true
+        print(('^3[fn_bridge] %s failed, the adapter returned a safe value instead: %s^0'):format(key, tostring(result[2])))
+    end
+
+    local value = Fallback[name]
+    return type(value) == 'table' and {} or value
+end
+
+FN_BRIDGE.AdapterErrors = function()
+    local keys = {}
+    for key in pairs(Failed) do keys[#keys + 1] = key end
+    table.sort(keys)
+
+    return keys
+end
+
 FN_BRIDGE.Overridable = function(namespace, target)
     if type(target) ~= 'table' then return target end
 
@@ -121,10 +153,10 @@ FN_BRIDGE.Overridable = function(namespace, target)
             local wrapper = function(...)
                 if Overridden[key] then
                     local override = FN_BRIDGE.Setting(key)
-                    if FN_BRIDGE.Callable(override) then return override(...) end
+                    if FN_BRIDGE.Callable(override) then return Safe(key, name, override, ...) end
                 end
 
-                return adapter(...)
+                return Safe(key, name, adapter, ...)
             end
 
             Hooked[wrapper] = { adapter = adapter, key = key }
@@ -202,9 +234,20 @@ local FrameworkAliases = {
     qbx = 'framework',
 }
 
+local Orders = { framework = FrameworkOrder, inventory = InventoryOrder, notify = NotifyOrder, helpText = HelpTextOrder, target = TargetOrder, society = SocietyOrder }
+
 FN_KNOWN = {}
-for _, order in ipairs({ FrameworkOrder, InventoryOrder, NotifyOrder, HelpTextOrder, TargetOrder, SocietyOrder }) do
-    for _, entry in ipairs(order) do FN_KNOWN[entry.resource] = true end
+for area, order in pairs(Orders) do
+    for _, entry in ipairs(order) do FN_KNOWN[entry.resource] = area end
+end
+
+FN_BRIDGE.Picked = function(area)
+    local name = FN_BRIDGE[area .. 'Name']
+    for _, entry in ipairs(Orders[area] or {}) do
+        if entry.name == name then return entry.resource end
+    end
+
+    return name
 end
 
 local function ResourcePresence(resourceName)
@@ -215,8 +258,30 @@ local function ResourcePresence(resourceName)
     return 1
 end
 
-local function DetectFrom(order, configured, fallback, aliases)
-    if configured ~= 'auto' then return aliases and aliases[configured] or configured end
+local function Known(order, configured, convar, extras)
+    local names = { 'auto' }
+    for _, extra in ipairs(extras) do
+        if extra == configured then return true end
+        names[#names + 1] = extra
+    end
+    for _, entry in ipairs(order) do
+        if entry.name == configured then
+            if IsDuplicityVersion() and GetResourceState(entry.resource) == 'missing' then
+                print(('^3setr fn_bridge:%s is "%s" but the resource %s is not in your resources folder.^7'):format(convar, configured, entry.resource))
+            end
+            return true
+        end
+        names[#names + 1] = entry.name
+    end
+    if IsDuplicityVersion() then
+        print(('^3setr fn_bridge:%s is "%s", which fn_bridge does not know, so it detects this on its own. Valid values: %s^7'):format(convar, configured, table.concat(names, ', ')))
+    end
+
+    return false
+end
+
+local function DetectFrom(order, configured, fallback, aliases, convar, extras)
+    if configured ~= 'auto' and (not convar or Known(order, configured, convar, extras)) then return aliases and aliases[configured] or configured end
 
     local pending
     for _, entry in ipairs(order) do
@@ -237,12 +302,12 @@ local function ResourceNames(order)
     return names
 end
 
-FN_BRIDGE.frameworkName = DetectFrom(FrameworkOrder, Config.Framework, 'standalone')
-FN_BRIDGE.inventoryName = Config.InventorySystem ~= 'none' and DetectFrom(InventoryOrder, Config.InventorySystem, nil) or nil
+FN_BRIDGE.frameworkName = DetectFrom(FrameworkOrder, Config.Framework, 'standalone', nil, 'framework', { 'standalone' })
+FN_BRIDGE.inventoryName = Config.InventorySystem ~= 'none' and DetectFrom(InventoryOrder, Config.InventorySystem, nil, nil, 'inventory', { 'none' }) or nil
 FN_BRIDGE.notifyName = DetectFrom(NotifyOrder, Config.NotifySystem, 'framework', FrameworkAliases)
 FN_BRIDGE.helpTextName = DetectFrom(HelpTextOrder, Config.ShowHelpSystem, 'framework', FrameworkAliases)
-FN_BRIDGE.targetName = DetectFrom(TargetOrder, Config.TargetSystem, nil)
-FN_BRIDGE.societyName = DetectFrom(SocietyOrder, Config.Society, nil)
+FN_BRIDGE.targetName = DetectFrom(TargetOrder, Config.TargetSystem, nil, nil, 'target', { 'none' })
+FN_BRIDGE.societyName = DetectFrom(SocietyOrder, Config.Society, nil, nil, 'society', { 'none', '_default' })
 
 Config.DebugPrint('framework detected:', FN_BRIDGE.frameworkName or 'none')
 Config.DebugPrint('inventory detected:', FN_BRIDGE.inventoryName or 'none, falling back to the framework')

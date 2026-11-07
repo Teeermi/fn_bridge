@@ -4,7 +4,7 @@ local V = FN_VOICE
 
 local Systems = { 'pma-voice', 'saltychat', 'yaca-voice', 'mumble-voip' }
 
-for _, resource in ipairs(Systems) do FN_KNOWN[resource] = true end
+for _, resource in ipairs(Systems) do FN_KNOWN[resource] = 'voice' end
 
 local calls, callOf, muted, told, radioOf = {}, {}, {}, {}, {}
 

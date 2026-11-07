@@ -153,7 +153,7 @@ end
 
 local Fuels = { 'LegacyFuel', 'cdn-fuel', 'ps-fuel', 'lj-fuel', 'okokGasStation', 'ti_fuel', 'x-fuel' }
 
-for _, resource in ipairs(Fuels) do FN_KNOWN[resource] = true end
+for _, resource in ipairs(Fuels) do FN_KNOWN[resource] = 'fuel' end
 
 FN_HELPER.GetFuel = function(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return nil end

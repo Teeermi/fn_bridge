@@ -2,7 +2,7 @@ FN_APPEARANCE = {}
 
 local A = FN_APPEARANCE
 
-for _, resource in ipairs({ 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }) do FN_KNOWN[resource] = true end
+for _, resource in ipairs({ 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }) do FN_KNOWN[resource] = 'appearance' end
 
 local function Online(playerId)
     playerId = tonumber(playerId)

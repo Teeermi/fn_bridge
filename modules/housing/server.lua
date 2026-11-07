@@ -189,7 +189,7 @@ local Providers = {
     } },
 }
 
-for _, p in ipairs(Providers) do FN_KNOWN[p.resource] = true end
+for _, p in ipairs(Providers) do FN_KNOWN[p.resource] = 'housing' end
 
 local function Hook()
     local hook = FN_BRIDGE.Setting('housing')
@@ -349,16 +349,11 @@ FN_HOUSING.Prepare = function(id, key, coords)
 end
 
 local Givers = {
-    { resource = 'bcs_housing', house = true,
-        give = function(playerId, home) return exports.bcs_housing:GiveHouse(home.house, playerId, playerId) end },
-    { resource = 'nolag_properties', house = true, starter = true, offline = true,
-        give = function(_, home, key)
-            if home.starter then return exports.nolag_properties:AddStarterApartment(key, tonumber(home.starter)) end
-            return exports.nolag_properties:TransferProperty(tonumber(home.house) or home.house, 'user', key, tostring(home.reason or 'fn_bridge'))
-        end },
+    { resource = 'nolag_properties', starter = true, offline = true,
+        give = function(_, _, key) return exports.nolag_properties:AddStarterApartment(key) end },
 }
 
-for _, g in ipairs(Givers) do FN_KNOWN[g.resource] = true end
+for _, g in ipairs(Givers) do FN_KNOWN[g.resource] = 'housing' end
 
 local function Giver()
     local hook = FN_BRIDGE.Setting('giveHome')

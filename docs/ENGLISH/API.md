@@ -111,7 +111,7 @@ Returned by `GetPlayerFromId` and `GetPlayerFromIdentifier`. Every field is alwa
 | `AddMoney` | `playerId`, `account`, `amount`, `reason` | boolean | no |
 | `RemoveMoney` | `playerId`, `account`, `amount`, `reason` | boolean, `false` when there isn't enough | no |
 | `GetJob` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss, onDuty }`, or `false` | no |
-| `SetJob` | `playerId` or `identifier`, `jobName`, `grade` | boolean, online or offline, checks the job exists | maybe |
+| `SetJob` | `playerId` or `identifier`, `jobName`, `grade` | boolean, online or offline, checks the job exists. An online player's identifier changes the live player. vRP keeps groups in memory, so an offline user there returns `false` | maybe |
 | `RemoveJob` | `playerId` or `identifier`, `jobName` | boolean (fires from that job) | maybe |
 | `GetGang` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss }`, or `false` | no |
 | `GetNeeds` | `playerId` | `{ hunger, thirst, stress }`, each 0-100 or missing | no |
@@ -126,7 +126,7 @@ Returned by `GetPlayerFromId` and `GetPlayerFromIdentifier`. Every field is alwa
 | `AddCharacterSlots` | `license`, `amount`, `default`, `max` | boolean (esx_multicharacter) | yes |
 | `Supports` | `'phoneNumber'`, `'characterSlots'`, `'needs'`, `'playTime'`, `'gangs'`, `'vehicles'` | boolean | maybe |
 
-- `account` is `cash`, `bank` or `black_money`. On QBCore, QBox, ox_core and vRP `black_money` is an item (`Config.Bridge.dirtyMoney` of the calling script): `markedbills` with a `worth` on QBCore, `black_money` on QBox with ox_inventory and on ox_core, `dinheirosujo` on vRP. Any other account the player has (QBCore `crypto`) works by its own name.
+- `account` is `cash`, `bank` or `black_money`. On QBCore, QBox, ox_core and vRP `black_money` is an item (`Config.Bridge.dirtyMoney` of the calling script): `markedbills` with a `worth` on QBCore, `black_money` on QBox with ox_inventory and on ox_core, `dinheirosujo` on vRP. Any other account the player has (QBCore `crypto`) works by its own name. An account the player doesn't have reads `0`, and `AddMoney` and `RemoveMoney` return `false`. `amount` is rounded down and must be above 0.
 - `reason` ends up in the framework's money log where it has one.
 - `RegisterUsableItem` callbacks get a second argument, `{ name, slot, metadata }`, when the framework passes them. On ox_core point the item at `export = 'fn_bridge.useItem'` in ox_inventory's items.
 - `GetJobs` grades carry `isBoss`.
@@ -350,6 +350,7 @@ end, false, { help = 'Give a crate to a player', params = { { name = 'id', help 
 
 - `type`: `'info'` (default), `'success'` or `'error'`. `time` in ms, default `5000`. Some resources ignore one or both.
 - `options` on `ShowHelpText` (like `icon`) only work on some resources. The message always shows.
+- Help text stays on screen until `HideHelpText`.
 - `Chat` with `playerId` `-1` or `nil` sends to everyone. `color` is `{ r, g, b }`.
 
 ## FN_BRIDGE.PROGRESS (client)
@@ -509,12 +510,12 @@ Every item comes back like this:
 
 | Function | Args | Returns |
 | --- | --- | --- |
-| `OpenInventory` | `'stash'` / `'shop'` / `'player'`, `data` | nothing |
+| `OpenInventory` | `'stash'` / `'shop'` / `'player'`, `data` | nothing. For `'player'` on qb-inventory 2.x and ps-inventory use `INTERACT.Do(playerId, target, 'search')` on the server, the client can't open another player there |
 | `GetItemCount` | `itemName`, `metadata` | number |
 | `HasItem` | `itemName`, `metadata` | boolean |
 | `GetItemData` | `itemName` | `{ name, label, description, image }`, or `false` |
 
-**About the AddItem / RemoveItem result.** Only ox_inventory and qb-inventory report whether the item really moved. On the others, `true` means the call went through. Check `GetItemCount` if it matters.
+**About the AddItem / RemoveItem result.** `count` must be a whole number from 1 to 1000000000 (a fraction is rounded down, nothing passed means 1), anything else returns `false` and changes nothing. `RemoveItem` also returns `false` when the player has fewer than `count`. ox_inventory and qb-inventory report whether the item really moved, on the others `true` means the call went through.
 
 **About metadata filters.** ox_inventory and ak47_inventory filter properly. The others match simple top-level values only (no nested tables). qb-inventory and codem-inventory remove by slot, so `RemoveItem` returns `false` if nothing matches. qs-inventory ignores the filter on the client. Test before relying on it.
 
@@ -650,7 +651,7 @@ end
 
 Any other housing script plugs in with the `housing` hook. A function is the list alone; a table can add the rest: `{ list = fn(identifier, playerId), isLocked = fn(homeId), setLocked = fn(homeId, locked, playerId), forSale = fn(), starters = fn(), resume = fn(character), prepare = fn(homeId, key, coords) }`. Return home ids with a prefix of your own so they don't clash with other scripts, and `nil` from `isLocked` for a home that isn't yours.
 
-`Give` hands a home to a character. `home` is `{ house = id }` for a house you already created, or `{ starter = id }` for a new starter apartment in that building, plus an optional `reason` for the housing script's log. It works with bcs_housing (`house`, player online) and nolag_properties (`house` and `starter`, offline too, by `key`). `key` is the character identifier and comes from `playerId` when left out. `Giver` tells you up front what the running script can do: `house` and `starter` are the modes it takes, `offline` means `playerId` can be `nil`. Reasons: `none` (no script), `invalid`, `unsupported` (that mode), `offline`, `identifier`, `failed`, or what your hook returned. Any other housing script plugs in through the `giveHome` hook in `Config.Bridge`. qs-housing has no export for handing out a house, so a qs-housing server needs that hook too.
+`Give` hands a home to a character. `home` is `{ house = id }` for a house you already created, or `{ starter = id }` for a new starter apartment in that building, plus an optional `reason` for the housing script's log. On its own it works with nolag_properties (`starter` only, offline too, by `key`; nolag gives the starter apartment set in its own config). `key` is the character identifier and comes from `playerId` when left out. `Giver` tells you up front what the running script can do: `house` and `starter` are the modes it takes, `offline` means `playerId` can be `nil`. Reasons: `none` (no script), `invalid`, `unsupported` (that mode), `offline`, `identifier`, `failed`, or what your hook returned. Any other housing script plugs in through the `giveHome` hook in `Config.Bridge`. A house you already created always goes through that hook, also with bcs_housing, nolag_properties and qs-housing, because none of them documents an export for handing a house over.
 
 ```lua
 local giver = FN_BRIDGE.HOUSING.Giver()
@@ -732,7 +733,7 @@ Without a provider, `GetState` reads QBCore and Qbox metadata (`inlaststand`, `i
 
 `Revive` asks, in order: the provider, the calling script's `Config.Bridge.revive(playerId)` hook, qbx_medical, qb-ambulancejob, esx_ambulancejob, and last a plain resurrect in place. It then clears the framework flag.
 
-`SetFlag` writes the flag other scripts and character screens read: QBCore and Qbox metadata `isdead` (and clears `inlaststand`), ESX `users.is_dead` when the column exists, and the `isDead` state bag (ox_core saves it to `characters.isDead`).
+`SetFlag` writes the flag other scripts and character screens read: QBCore and Qbox metadata `isdead` (and clears `inlaststand`), ESX `users.is_dead` when the column exists, the `isDead` state bag (ox_core saves it to `characters.isDead`) and the `dead` state bag, which ox_inventory reads to keep its inventory closed.
 
 A player marked with `SetArena` is in a minigame. Their deaths fire the server event `fn_bridge/server/arenaDied` (`playerId`, `{ state, killer, weapon, coords, cause, arena }`) and nothing else: no `fn_bridge/server/playerDied` and no client `fn_bridge:deathChanged`. The client reads the flag from the `fn_arena` state bag; a client that writes that bag itself gets it set back by the server.
 
@@ -822,7 +823,7 @@ Everything below came with fn_mdt, fn_business and fn_crime. The same rules hold
 | `GetInsurance` | `identifier` | `{ active, plan, expires, cover }` from the `insurance` hook, or `false`. `cover` (0 to 1, optional) is the share of a hospital bill the plan pays | no |
 | `SetCharacter` | `identifier`, `{ dateOfBirth, sex, nationality }` | boolean. Online or offline, any field may be left out, `sex` is `'m'` or `'f'`, `dateOfBirth` is stored as given (the format your framework uses). ESX writes `users.dateofbirth`/`sex` and `nationality` when that column exists; QBCore and Qbox write `charinfo.birthdate`/`gender`/`nationality`. ox_core, vRP and standalone: `IsSupported` is `false` | no |
 
-- `grades` is an array of `{ grade, name, label, salary, isBoss }`. `grade` starts at `0`; ox_core numbers its grades from `1` in the order given, and `GetJobGrades` returns them that way. `opts` for `CreateJob`: `{ type, defaultDuty, offDutyPay, whitelisted, persist }`, all optional; the others take `{ persist }`. `persist = false` keeps the change in memory only on QBCore and Qbox (ESX and ox_core always save to the database). Errors: `'exists'`, `'unknown'`, `'invalid'`, `'unsupported'`, `'failed'`, or the framework's own message.
+- `grades` is an array of `{ grade, name, label, salary, isBoss }`. `grade` starts at `0`; ox_core numbers its grades from `1` in the order given, and `GetJobGrades` returns them that way. `SetJob` with grade `0` on ox_core gives grade `1`. `opts` for `CreateJob`: `{ type, defaultDuty, offDutyPay, whitelisted, persist }`, all optional; the others take `{ persist }`. `persist = false` keeps the change in memory only on QBCore and Qbox (ESX and ox_core always save to the database). Errors: `'exists'`, `'unknown'`, `'invalid'`, `'unsupported'`, `'failed'`, or the framework's own message.
 - Where jobs live: ESX tables `jobs` and `job_grades` (live when ESX has `RefreshJobs`, else `'restart'`), Qbox `CreateJob`/`RemoveJob` (saved to its jobs file), QBCore `AddJob`/`UpdateJob`/`RemoveJob` in memory plus fn_bridge's own `fn_bridge_groups` table, replayed at every start, ox_core groups (`CreateGroup`, grades in `ox_group_grades`). vRP and standalone: `IsSupported` is `false` for the create, grade and delete functions.
 - **Gangs.** QBCore and Qbox use their gangs. ESX uses the `hiddenjob` pattern when `users.hiddenjob` exists (a second ESX job on `xPlayer.hiddenjob`, set with `setHiddenJob`): gangs are then ESX jobs and `CreateGang` is `CreateJob`. Anything else: the `gang` hook for reading and `FRAMEWORK.SetGang` / `FRAMEWORK.RemoveGang` overrides for writing. `GetGang` now asks the `gang` hook first. `Supports('gangs')` follows all of this.
 - **Duty.** `CheckJobDuty` asks the `duty` hook first (`function(playerId) return boolean end`), for servers where a job core counts duty.
@@ -882,7 +883,7 @@ One address for invoices from every script.
 | `Name` | none | where `Send` goes: the providing resource, `'esx_billing'`, or `false` |
 | `Send` | `playerId` or `nil` (who issues it), `bill` | bill id as a string, or `false, error` |
 | `List` | `identifier` | array of `{ id, from, label, amount, due, status, source }`, every source merged, newest first |
-| `Pay` | `playerId`, `id` | boolean, error |
+| `Pay` | `playerId`, `id` | boolean, error. `'offline'` when an esx_billing bill came from a player who isn't online, because nobody could receive the money |
 | `Provide` | `impl` | `true`; same as `FN_BRIDGE.Provide('billing', impl)` |
 
 `bill`: `{ to = identifier or job, from = job or resource, amount, label, items = { { label, amount, count } }, due }` (`due` is a unix time). `status` is `'unpaid'`, `'overdue'` or `'paid'`. Ids carry their source (`'esx_billing:12'`), so `Pay` finds the right one. A provider is `{ Send = fn(playerId, bill), List = fn(identifier), Pay = fn(playerId, id) }` with its own ids; fn_business registers itself this way. Without a provider esx_billing is used. Errors: `'none'`, `'invalid'`, `'funds'`, `'unknown'`, `'failed'`.

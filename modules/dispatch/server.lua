@@ -2,7 +2,7 @@ FN_DISPATCH = {}
 
 local Order = { 'fn_mdt', 'fn_phone', 'lb-tablet', 'ps-dispatch', 'cd_dispatch', 'qs-dispatch', 'tk_dispatch', 'fd_dispatch', 'wasabi_mdt', 'origen_police', 'bub-mdt', 'kartik-mdt', 'redutzu-mdt', 'piotreq_gpt', 'linden_outlawalert', 'emergencydispatch' }
 
-for _, resource in ipairs(Order) do FN_KNOWN[resource] = true end
+for _, resource in ipairs(Order) do FN_KNOWN[resource] = 'dispatch' end
 
 local Server = {
     ['fn_mdt'] = function(playerId, alert)

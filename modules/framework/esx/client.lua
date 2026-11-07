@@ -120,12 +120,35 @@ FN_FRAMEWORK.Notify = function(message, messageType, time)
     FN_FRAMEWORK.obj.ShowNotification(message, messageType, time)
 end
 
+local HelpText, HelpTextUI, HelpDrawing
+
 FN_FRAMEWORK.ShowHelpText = function(message)
-    FN_FRAMEWORK.obj.ShowHelpNotification(message)
+    message = tostring(message)
+    if message == HelpText then return end
+
+    HelpText = message
+    HelpTextUI = GetResourceState('esx_textui') == 'started'
+    if HelpTextUI then
+        exports['esx_textui']:TextUI(message, 'info')
+        return
+    end
+
+    AddTextEntry('fnBridgeHelp', message)
+    if HelpDrawing then return end
+
+    HelpDrawing = true
+    CreateThread(function()
+        while HelpText and not HelpTextUI do
+            DisplayHelpTextThisFrame('fnBridgeHelp', false)
+            Wait(0)
+        end
+        HelpDrawing = false
+    end)
 end
 
 FN_FRAMEWORK.HideHelpText = function()
-    return true
+    if HelpTextUI and GetResourceState('esx_textui') == 'started' then exports['esx_textui']:HideUI() end
+    HelpText, HelpTextUI = nil, nil
 end
 
 Config.DebugPrint('framework adapter loaded: esx (client)')

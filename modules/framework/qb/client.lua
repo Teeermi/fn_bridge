@@ -122,11 +122,21 @@ FN_FRAMEWORK.Notify = function(message, messageType, time)
     FN_FRAMEWORK.obj.Functions.Notify(message, FN_FRAMEWORK.notifyTypes[messageType] or 'primary', time)
 end
 
+local hiddenAt, shown = -10000, 0
+
 FN_FRAMEWORK.ShowHelpText = function(message, position)
     exports['qb-core']:DrawText(message, position or 'left')
+    shown = shown + 1
+    local wait, token = 1100 - (GetGameTimer() - hiddenAt), shown
+    if wait > 0 then
+        SetTimeout(wait, function()
+            if shown == token then exports['qb-core']:DrawText(message, position or 'left') end
+        end)
+    end
 end
 
 FN_FRAMEWORK.HideHelpText = function()
+    hiddenAt, shown = GetGameTimer(), shown + 1
     exports['qb-core']:HideText()
 end
 

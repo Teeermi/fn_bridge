@@ -538,32 +538,12 @@ FN_FRAMEWORK.GetItemLabel = function(itemName)
     return item.label or itemName
 end
 
-local function BuildVehicleData(row)
-    return {
-        owner = row.citizenid,
-        plate = row.plate,
-        vehicle = row.mods and json.decode(row.mods) or {},
-        stored = row.state == 1,
-    }
-end
-
 FN_FRAMEWORK.GetVehicleByPlate = function(plate)
-    local row = MySQL.single.await('SELECT citizenid, plate, mods, state FROM player_vehicles WHERE plate = ?', {plate})
-    if not row then return false end
-
-    return BuildVehicleData(row)
+    return FN_VEHICLES.Get(plate)
 end
 
 FN_FRAMEWORK.GetPlayerVehicles = function(identifier)
-    local result = {}
-    local rows = MySQL.query.await('SELECT citizenid, plate, mods, state FROM player_vehicles WHERE citizenid = ?', {identifier})
-    if not rows then return result end
-
-    for _, row in ipairs(rows) do
-        result[#result + 1] = BuildVehicleData(row)
-    end
-
-    return result
+    return FN_VEHICLES.List(identifier)
 end
 
 local function ReadOfflineMetadata(identifier)

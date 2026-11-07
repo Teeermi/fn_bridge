@@ -23,7 +23,11 @@ FN_INVENTORY.HasItem = function(playerId, itemName, metadata)
 end
 
 FN_INVENTORY.GetItemSlot = function(playerId, slot)
-    return FN_BRIDGE.NormalizeItem(exports['ak47_inventory']:GetSlot(playerId, slot))
+    for _, item in pairs(exports['ak47_inventory']:GetInventoryItems(playerId) or {}) do
+        if type(item) == 'table' and tonumber(item.slot) == tonumber(slot) then return FN_BRIDGE.NormalizeItem(item) end
+    end
+
+    return FN_BRIDGE.NormalizeItem(nil)
 end
 
 Config.DebugPrint('inventory adapter loaded: ak47_inventory (server)')

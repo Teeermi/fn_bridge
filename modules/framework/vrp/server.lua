@@ -84,10 +84,12 @@ local function DirtyItem()
     return type(configured) == 'table' and configured.item or 'dinheirosujo'
 end
 
+local Accounts = { bank = 'bank', cash = 'cash', money = 'cash', black_money = 'black_money' }
+
 local function PositiveAmount(amount)
     amount = math.floor(tonumber(amount) or 0)
 
-    return amount > 0 and amount or nil
+    return amount > 0 and amount < 2 ^ 53 and amount or nil
 end
 
 local function ResolveGroup(playerId)
@@ -139,9 +141,9 @@ end
 
 FN_FRAMEWORK.GetMoney = function(playerId, accountName)
     local userId = UserId(playerId)
-    if not userId then return 0 end
+    accountName = Accounts[accountName or 'bank']
+    if not userId or not accountName then return 0 end
 
-    accountName = accountName or 'bank'
     if accountName == 'black_money' then return math.floor(tonumber(Vrp('getInventoryItemAmount', userId, DirtyItem())) or 0) end
 
     return math.floor(tonumber(Vrp(accountName == 'cash' and 'getMoney' or 'getBankMoney', userId)) or 0)
@@ -150,9 +152,9 @@ end
 FN_FRAMEWORK.AddMoney = function(playerId, accountName, amount)
     amount = PositiveAmount(amount)
     local userId = UserId(playerId)
-    if not amount or not userId then return false end
+    accountName = Accounts[accountName or 'bank']
+    if not amount or not userId or not accountName then return false end
 
-    accountName = accountName or 'bank'
     if accountName == 'black_money' then
         Vrp('giveInventoryItem', userId, DirtyItem(), amount)
         return true
@@ -172,8 +174,8 @@ end
 FN_FRAMEWORK.RemoveMoney = function(playerId, accountName, amount)
     amount = PositiveAmount(amount)
     local userId = UserId(playerId)
-    accountName = accountName or 'bank'
-    if not amount or not userId or FN_FRAMEWORK.GetMoney(playerId, accountName) < amount then return false end
+    accountName = Accounts[accountName or 'bank']
+    if not amount or not userId or not accountName or FN_FRAMEWORK.GetMoney(playerId, accountName) < amount then return false end
 
     if accountName == 'black_money' then return Vrp('tryGetInventoryItem', userId, DirtyItem(), amount) == true end
     if accountName == 'cash' then return Vrp('tryPayment', userId, amount) == true end
@@ -278,10 +280,16 @@ FN_FRAMEWORK.GetPlayers = function()
     return players
 end
 
+local function TargetUser(target)
+    if type(target) == 'number' then return UserId(target) end
+
+    return tonumber(target)
+end
+
 FN_FRAMEWORK.SetJob = function(target, jobName)
     if not FN_FRAMEWORK.GetJobs()[jobName] then return false end
 
-    local userId = type(target) == 'number' and UserId(target) or tonumber(target)
+    local userId = TargetUser(target)
     if not userId then return false end
 
     if FN_FRAMEWORK.GetJobs()[jobName].virtual then
@@ -292,7 +300,7 @@ FN_FRAMEWORK.SetJob = function(target, jobName)
 
     Vrp('addUserGroup', userId, jobName)
 
-    return true
+    return Vrp('hasGroup', userId, jobName) == true
 end
 
 FN_FRAMEWORK.SetJobOffline = function(identifier, jobName, jobGrade)
@@ -300,12 +308,12 @@ FN_FRAMEWORK.SetJobOffline = function(identifier, jobName, jobGrade)
 end
 
 FN_FRAMEWORK.RemoveJob = function(target, jobName)
-    local userId = type(target) == 'number' and UserId(target) or tonumber(target)
-    if not userId then return false end
+    local userId = TargetUser(target)
+    if not userId or Vrp('hasGroup', userId, jobName) ~= true then return false end
 
     Vrp('removeUserGroup', userId, jobName)
 
-    return true
+    return Vrp('hasGroup', userId, jobName) ~= true
 end
 
 FN_FRAMEWORK.CheckJobDuty = function(playerId)
@@ -390,9 +398,11 @@ FN_FRAMEWORK.GetCharacter = function(identifier)
 end
 
 FN_FRAMEWORK.SearchCharacters = function(query, limit)
-    if type(query) ~= 'string' or #query < 2 then return {} end
+    if type(query) ~= 'string' then return {} end
 
-    local safe = query:gsub('[%%_]', '')
+    local safe = query:match('^%s*(.-)%s*$'):gsub('[%%_]', '')
+    if #safe < 2 or #safe > 64 then return {} end
+
     local rows = MySQL.query.await(('SELECT user_id, firstname, name FROM vrp_user_identities WHERE user_id = ? OR CONCAT(firstname, " ", name) LIKE ? LIMIT %d'):format(math.min(math.max(math.floor(tonumber(limit) or 10), 1), 10)), { tonumber(query) or -1, '%' .. safe .. '%' })
 
     local result = {}

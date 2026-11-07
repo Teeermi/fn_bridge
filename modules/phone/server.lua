@@ -2,7 +2,7 @@ FN_PHONE = {}
 
 local Order = { 'fn_phone', 'lb-phone', 'npwd', 'qb-phone' }
 
-for _, resource in ipairs(Order) do FN_KNOWN[resource] = true end
+for _, resource in ipairs(Order) do FN_KNOWN[resource] = 'phone' end
 
 local function Started(resource)
     return GetResourceState(resource) == 'started'
@@ -69,9 +69,10 @@ local Mail = {
     end,
     ['lb-phone'] = function(target, m)
         local number = exports['lb-phone']:GetEquippedPhoneNumber(target)
-        if not number then return false end
+        local email = number and exports['lb-phone']:GetEmailAddress(number)
+        if not email then return false end
 
-        return exports['lb-phone']:SendMail({ to = number, sender = m.sender, subject = m.subject, message = m.message }) == true
+        return exports['lb-phone']:SendMail({ to = email, sender = m.sender, subject = m.subject, message = m.message }) == true
     end,
     ['qb-phone'] = function(target, m)
         local citizenid = type(target) == 'number' and FN_BRIDGE.FRAMEWORK.GetIdentifier(target) or target

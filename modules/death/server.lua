@@ -8,14 +8,14 @@ local Revivers = {
     { resource = 'esx_ambulancejob', revive = function(playerId) TriggerClientEvent('esx_ambulancejob:revive', playerId) end },
 }
 
-for _, reviver in ipairs(Revivers) do FN_KNOWN[reviver.resource] = true end
+for _, reviver in ipairs(Revivers) do FN_KNOWN[reviver.resource] = 'death' end
 
 local DownBags = { 'inlaststand', 'inLaststand', 'laststand', 'lastStand', 'isDown', 'down' }
 local DeadBags = { 'isDead', 'IsDead', 'isdead', 'dead', 'Dead' }
 
 local function Online(playerId)
     playerId = tonumber(playerId)
-    return playerId and GetPlayerPing(playerId) > 0 and playerId or nil
+    return playerId and GetPlayerName(playerId) ~= nil and playerId or nil
 end
 
 local function QbPlayer(playerId)
@@ -70,6 +70,9 @@ FN_DEATH.SetFlag = function(playerId, on)
     if not playerId then return false end
     on = on == true
 
+    local state = Player(playerId).state
+    if (state.dead == true) ~= on then state:set('dead', on, true) end
+
     local player = QbPlayer(playerId)
     if player then
         if not player.Functions or not player.Functions.SetMetaData then return false end
@@ -84,7 +87,6 @@ FN_DEATH.SetFlag = function(playerId, on)
         if identifier then MySQL.update('UPDATE users SET is_dead = ? WHERE identifier = ?', { on and 1 or 0, identifier }) end
     end
 
-    local state = Player(playerId).state
     if (state.isDead == true) ~= on then state:set('isDead', on, true) end
 
     return true
@@ -95,7 +97,7 @@ FN_DEATH.Revive = function(playerId)
     if not playerId then return false end
 
     local caller = GetInvokingResource()
-    if Provider and Provider.resource ~= caller then
+    if Provider and Provider.resource ~= caller and FN_BRIDGE.Callable(Provider.impl.Revive) then
         local ok, done = pcall(Provider.impl.Revive, playerId)
 
         return ok and done ~= false and Provider.resource or false
@@ -139,8 +141,8 @@ end
 
 local Ambulances = { 'esx_ambulancejob', 'qb-ambulancejob', 'qbx_medical', 'wasabi_ambulance', 'ars_ambulancejob', 'ak47_ambulancejob' }
 
-for _, resource in ipairs(Ambulances) do FN_KNOWN[resource] = true end
-FN_KNOWN['qbx_ambulancejob'] = true
+for _, resource in ipairs(Ambulances) do FN_KNOWN[resource] = 'death' end
+FN_KNOWN['qbx_ambulancejob'] = 'death'
 
 FN_DEATH.Ambulances = function()
     local out = {}

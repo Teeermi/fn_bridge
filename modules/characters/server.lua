@@ -617,24 +617,30 @@ FN_CHARACTERS.Deleted = function(identifier, playerId)
     TriggerEvent('fn_bridge:characterDeleted', identifier, tonumber(playerId))
 end
 
-local function Gone(identifier, playerId, sql)
-    if type(identifier) ~= 'string' or identifier == '' then return end
+local Checking = {}
 
+local function Gone(identifier, playerId, sql)
+    if type(identifier) ~= 'string' or identifier == '' or #identifier > 64 or Checking[playerId] then return end
+
+    Checking[playerId] = true
     SetTimeout(3000, function()
+        Checking[playerId] = nil
         if not MySQL.scalar.await(sql, { identifier }) then FN_CHARACTERS.Deleted(identifier, playerId) end
     end)
 end
 
-RegisterNetEvent('esx_multicharacter:DeleteCharacter', function(slot)
-    local license = GetPlayerIdentifierByType(source, 'license')
-    slot = math.tointeger(tonumber(slot))
-    if license and slot then Gone(('char%d:%s'):format(slot, license:gsub('^license:', '')), source, 'SELECT 1 FROM users WHERE identifier = ?') end
-end)
-
-for _, event in ipairs({ 'qb-multicharacter:server:deleteCharacter', 'qbx_core:server:deleteCharacter' }) do
-    RegisterNetEvent(event, function(citizenId)
-        Gone(citizenId, source, 'SELECT 1 FROM players WHERE citizenid = ?')
+if FN_BRIDGE.IsFramework('esx') then
+    RegisterNetEvent('esx_multicharacter:DeleteCharacter', function(slot)
+        local license = GetPlayerIdentifierByType(source, 'license')
+        slot = math.tointeger(tonumber(slot))
+        if license and slot then Gone(('char%d:%s'):format(slot, license:gsub('^license:', '')), source, 'SELECT 1 FROM users WHERE identifier = ?') end
     end)
+elseif FN_BRIDGE.IsFramework('qb') or FN_BRIDGE.IsFramework('qbx') then
+    for _, event in ipairs({ 'qb-multicharacter:server:deleteCharacter', 'qbx_core:server:deleteCharacter' }) do
+        RegisterNetEvent(event, function(citizenId)
+            Gone(citizenId, source, 'SELECT 1 FROM players WHERE citizenid = ?')
+        end)
+    end
 end
 
 AddEventHandler('ox:deletedCharacter', function(playerId, _, charId)

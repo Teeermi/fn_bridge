@@ -1,5 +1,47 @@
 # fn_bridge changelog
 
+## 1.6.2 (2026-11-07)
+
+Before you update
+- HOUSING.Give no longer calls GiveHouse in bcs_housing or TransferProperty in nolag_properties. Neither export has public documentation, so a house handover with those scripts needs the giveHome hook in Config.Bridge. nolag_properties still gives starter apartments, with AddStarterApartment and the character identifier.
+
+Added
+- A typo in fn_bridge:framework, inventory, target or society prints a message with the valid values at startup. fn_bridge detects that part on its own until you fix the line.
+- A typo in fn_bridge:dispatch, phone, voice or weather prints a message when no resource has that name.
+- fnb_selftest lists every known script that is running and says if fn_bridge uses it or which script it uses instead.
+
+Changed
+- An error inside a script adapter no longer stops the calling script. fn_bridge prints one warning per call and returns a safe value, like 0 for item counts and an empty list for items.
+
+Fixed
+- Mail to lb-phone goes to the player's email address. It used to go to the phone number, which lb-phone does not accept.
+- vms_notifyv2 notifications use the time you pass. It was sent under the wrong field.
+- is_ui and wasabi_notify show the message as the body with an empty title.
+- cd_drawtextui hides with its own HideUI event.
+- GetItemSlot on ak47_inventory reads the slot from the player's items. It called an export that ak47_inventory does not document.
+- CanCarry on codem-inventory returns true without calling an export that does not exist. codem-inventory checks weight in AddItem.
+- Engine percent in VEHICLES.Get and List reads a dead engine as 0. Failure scripts keep a broken engine at 100 health, which showed as 10%.
+- DEATH.Revive falls back to the hook, the known revive scripts and the bridge revive when the registered death provider has no Revive.
+- DEATH.SetFlag also sets the dead state bag, so ox_inventory stays closed while a player is down.
+- Help text on QBCore no longer disappears when a script hides it and shows it again within a second.
+- Help text on ESX stays on screen until HideHelpText. It uses esx_textui when that runs and the game's help text otherwise, and repeating the same text does nothing.
+- RemoveItem returns false when the player has too few items. On ESX and core_inventory it returned true without taking anything.
+- AddItem and RemoveItem refuse negative and invalid counts and round fractions down. A negative RemoveItem on qb-inventory added items.
+- Players can't open another player's inventory through the qb-inventory and ps-inventory open events. Any client within 3 meters could do it.
+- AddMoney and RemoveMoney refuse infinite amounts on every framework.
+- An unknown account reads 0 and returns false on ox_core and vRP. It used to go to the bank.
+- SetJob and RemoveJob with the identifier of an online player change the live player on ESX, QBCore and ox_core. The change used to reach only the database and was overwritten at the next save.
+- SetJob with grade 0 on ox_core gives grade 1. It used to remove the job.
+- SetJob and RemoveJob on vRP return false for an offline player. A server id of someone who left could hit another user.
+- A command registered with an empty or invalid group list stays closed. It used to be open to everyone.
+- Paying an esx_billing bill from an offline player returns false with offline and charges nothing. The buyer used to pay and the money vanished.
+- Vehicle reads on ESX, QBCore and Qbox and license calls on ESX return an empty result when the table is missing. They used to throw an error.
+- Character search on ox_core and vRP needs 2 characters after wildcards are removed. A search for %% returned the first 10 characters.
+- Search through FN_BRIDGE.INTERACT works with fn_inventory and ps-inventory.
+- Death checks count a player with 0 ping as online.
+- The spoofed event report goes to the webhook once per player, with the reason cut to 64 characters.
+- Character delete events are only registered on their own framework, and one player runs one check at a time.
+
 ## 1.6.1 (2026-11-06)
 
 Added

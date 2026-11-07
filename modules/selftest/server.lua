@@ -296,6 +296,44 @@ local function Tier19(framework, one)
     end)
 end
 
+local Named = { dispatch = 'FN_DISPATCH', phone = 'FN_PHONE', keys = 'FN_KEYS', jail = 'FN_JAIL', billing = 'FN_BILLING', coins = 'FN_COINS', doors = 'FN_DOORS', voice = 'FN_VOICE', weather = 'FN_WEATHER', appearance = 'FN_APPEARANCE' }
+local Ordered = { framework = true, inventory = true, notify = true, helpText = true, target = true, society = true }
+
+local function Active(area)
+    if Ordered[area] then return FN_BRIDGE.Picked(area) end
+    if Named[area] then return _G[Named[area]].Name() end
+    if area == 'death' then return FN_DEATH.Reviver() end
+    if area == 'housing' then
+        local list = FN_HOUSING.Running()
+        local giver = FN_HOUSING.Giver()
+        if giver then list[#list + 1] = giver.name end
+        return list
+    end
+
+    return nil
+end
+
+local function Adapters()
+    local rows = {}
+    for resource, area in pairs(FN_KNOWN) do
+        if type(area) == 'string' and GetResourceState(resource) == 'started' then rows[#rows + 1] = { area = area, resource = resource } end
+    end
+    table.sort(rows, function(a, b) return a.area .. a.resource < b.area .. b.resource end)
+
+    for _, row in ipairs(rows) do
+        local ok, used = pcall(Active, row.area)
+        local list = type(used) == 'table' and used or { ok and used or nil }
+        local hit = false
+        for _, name in ipairs(list) do hit = hit or name == row.resource end
+        local known = Ordered[row.area] or Named[row.area] or row.area == 'death' or row.area == 'housing'
+        local state = not known and 'called directly when a script needs it' or hit and 'active' or ('found, the bridge uses ' .. (list[1] and table.concat(list, ', ') or 'nothing'))
+        print(('^5ADAPTER^7 %s %s: %s'):format(row.area, row.resource, state))
+    end
+
+    local failed = FN_BRIDGE.AdapterErrors()
+    if #failed > 0 then print(('^3ADAPTER errors since start, a safe value was returned: %s^7'):format(table.concat(failed, ', '))) end
+end
+
 local function TierA()
     local framework = FN_BRIDGE.frameworkName
     local FRAMEWORK, VEHICLES = FN_BRIDGE.FRAMEWORK, FN_BRIDGE.VEHICLES
@@ -303,6 +341,20 @@ local function TierA()
     local one, two
 
     Check('framework detected', function() return framework ~= nil, 'none' end)
+    Check('vehicle reads never throw', function()
+        return FRAMEWORK.GetVehicleByPlate('FNBNOPE') == false and type(FRAMEWORK.GetPlayerVehicles('fnb_nobody')) == 'table'
+    end)
+    Check('money refuses unknown accounts', function()
+        return FRAMEWORK.AddMoney(0, 'fnb_nope', 1) == false and FRAMEWORK.RemoveMoney(0, 'fnb_nope', 1) == false and FRAMEWORK.GetMoney(0, 'fnb_nope') == 0
+    end)
+    Check('INVENTORY refuses bad counts', function()
+        local I = FN_BRIDGE.INVENTORY
+        for _, count in ipairs({ -5, 0, 0.5, 'x', math.huge, -math.huge, 0 / 0 }) do
+            if I.AddItem(0, 'fnb_probe', count) ~= false or I.RemoveItem(0, 'fnb_probe', count) ~= false then return false, tostring(count) end
+        end
+
+        return not FN_STASH or FN_STASH.CanOpen(0, 'player', 1) == false, 'net event opens a player'
+    end)
     Check('HTTP.Origin', function()
         local HTTP = FN_BRIDGE.HTTP
         local cf = { ['Cf-Connecting-Ip'] = '203.0.113.7' }
@@ -770,6 +822,7 @@ RegisterCommand('fnb_selftest', function(source, args)
     local playerId = tonumber(args[1])
 
     CreateThread(function()
+        Adapters()
         if playerId then TierB(playerId) else TierA() end
         print(('fnb_selftest %s: %d passed, %d failed, %d skipped'):format(FN_BRIDGE.frameworkName, Tally.pass, Tally.fail, Tally.skip))
     end)

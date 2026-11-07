@@ -26,13 +26,13 @@ FN_NOTIFY.notifiers = {
         return exports['t-notify']:Alert({ style = messageType, message = message, duration = time })
     end,
     vms_notifyv2 = function(message, messageType, time)
-        return exports['vms_notifyv2']:Notification({ type = messageType, description = message, duration = time })
+        return exports['vms_notifyv2']:Notification({ type = messageType, description = message, time = time })
     end,
     wasabi_uikit = function(message, messageType, time)
         return exports['wasabi_uikit']:Notification({ title = message, type = messageType, time = time })
     end,
     wasabi = function(message, messageType, time)
-        return exports['wasabi_notify']:notify(nil, message, time, messageType)
+        return exports['wasabi_notify']:notify('', message, time, messageType)
     end,
     lation_ui = function(message, messageType)
         return exports['lation_ui']:notify({ message = message, type = messageType })
@@ -44,7 +44,7 @@ FN_NOTIFY.notifiers = {
         return exports['g-notifications']:Notify({ title = 'Notification', description = message, type = messageType })
     end,
     is_ui = function(message, messageType, time)
-        return exports['is_ui']:Notify(message, nil, time, messageType)
+        return exports['is_ui']:Notify('', message, time, messageType)
     end,
     r_notify = function(message, messageType, time)
         return exports['r_notify']:notify({ title = 'Notification', content = message, type = messageType, icon = 'fas fa-check', duration = time, position = 'top-right', sound = false })
@@ -86,7 +86,7 @@ FN_NOTIFY.helpTextHide = {
         return exports['okokTextUI']:Close()
     end,
     cd = function()
-        return TriggerEvent('cd_drawtextui:ShowUI', 'hide')
+        return TriggerEvent('cd_drawtextui:HideUI')
     end,
     lab = function()
         return exports['lab-HintUI']:Hide()

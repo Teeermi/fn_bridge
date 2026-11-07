@@ -2,7 +2,7 @@ FN_DOORS = {}
 
 local D = FN_DOORS
 
-for _, resource in ipairs({ 'ox_doorlock', 'qb-doorlock' }) do FN_KNOWN[resource] = true end
+for _, resource in ipairs({ 'ox_doorlock', 'qb-doorlock' }) do FN_KNOWN[resource] = 'doors' end
 
 local function Started(resource)
     return GetResourceState(resource) == 'started'

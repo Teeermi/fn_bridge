@@ -97,8 +97,8 @@ local Adapters = {
         offline = function(key) return FN_DB.HasColumn('users', 'jail') and tonumber(MySQL.scalar.await('SELECT jail FROM users WHERE identifier = ?', { key })) end },
 }
 
-for _, adapter in ipairs(Adapters) do FN_KNOWN[adapter.resource] = true end
-FN_KNOWN['esx_communityservice'] = true
+for _, adapter in ipairs(Adapters) do FN_KNOWN[adapter.resource] = 'jail' end
+FN_KNOWN['esx_communityservice'] = 'jail'
 
 local function Pick()
     local hook = FN_BRIDGE.Setting('jail')

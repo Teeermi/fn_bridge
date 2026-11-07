@@ -250,6 +250,8 @@ An inventory fn_bridge has no adapter for goes in the same way, with full names:
 | `the ... adapter never finished loading` | Your framework didn't respond in 30 seconds. Check its own errors first |
 | `gave up waiting for the bridge` | That script started before fn_bridge. Move `ensure fn_bridge` above it |
 | `setr fn_bridge:notify is "x" which nothing here implements` | Typo in `server.cfg`. The message lists valid values |
+| `setr fn_bridge:inventory is "x", which fn_bridge does not know` | Typo in `server.cfg`. Same for `framework`, `target` and `society`. fn_bridge detects it on its own until you fix the line, and the message lists valid values |
+| `setr fn_bridge:voice is "x" but no resource has that name` | Typo in `server.cfg`. Same for `dispatch`, `phone` and `weather`. That part stays off until you fix the line |
 | `TARGET.AddBoxZone is not available` | No target resource is running, or `setr fn_bridge:target` names one that isn't started |
 | `needs fn_bridge 1.0.0 or newer` | Download the newest fn_bridge and replace the folder |
 

@@ -504,35 +504,16 @@ FN_FRAMEWORK.GetJobs = function()
 end
 
 FN_FRAMEWORK.GetVehicleByPlate = function(plate)
-    local vehicleData = MySQL.single.await('SELECT * FROM owned_vehicles WHERE plate = ?', {plate})
-    if not vehicleData then return false end
-
-    return {
-        owner = vehicleData.owner,
-        plate = vehicleData.plate,
-        vehicle = json.decode(vehicleData.vehicle),
-        stored = vehicleData.stored == 1 or vehicleData.stored == true,
-    }
+    return FN_VEHICLES.Get(plate)
 end
 
 FN_FRAMEWORK.GetPlayerVehicles = function(identifier)
-    local result = {}
-    local vehicles = MySQL.query.await('SELECT * FROM owned_vehicles WHERE owner = ?', {identifier})
-    if not vehicles then return {} end
-
-    for _, vehicleData in ipairs(vehicles) do
-        result[#result + 1] = {
-            owner = vehicleData.owner,
-            plate = vehicleData.plate,
-            vehicle = json.decode(vehicleData.vehicle),
-            stored = vehicleData.stored == 1 or vehicleData.stored == true,
-        }
-    end
-
-    return result
+    return FN_VEHICLES.List(identifier)
 end
 
 FN_FRAMEWORK.CheckLicense = function(identifier, license)
+    if not FN_DB.HasTable('user_licenses') then return false end
+
     local result = MySQL.single.await('SELECT owner FROM user_licenses WHERE owner = ? AND type = ?', {identifier, license})
     if not result then return false end
 
@@ -540,6 +521,7 @@ FN_FRAMEWORK.CheckLicense = function(identifier, license)
 end
 
 FN_FRAMEWORK.AddLicense = function(identifier, license)
+    if not FN_DB.HasTable('user_licenses') then return false end
     if FN_FRAMEWORK.CheckLicense(identifier, license) then return true end
 
     MySQL.insert.await('INSERT INTO user_licenses (owner, type) VALUES (?, ?)', {identifier, license})
@@ -548,6 +530,8 @@ FN_FRAMEWORK.AddLicense = function(identifier, license)
 end
 
 FN_FRAMEWORK.RemoveLicense = function(identifier, license)
+    if not FN_DB.HasTable('user_licenses') then return false end
+
     MySQL.query.await('DELETE FROM user_licenses WHERE owner = ? AND type = ?', {identifier, license})
 
     return true
@@ -577,7 +561,7 @@ Config.DebugPrint('framework adapter loaded: esx (server)')
 local function PositiveAmount(amount)
     amount = math.floor(tonumber(amount) or 0)
 
-    return amount > 0 and amount or nil
+    return amount > 0 and amount < 2 ^ 53 and amount or nil
 end
 
 FN_FRAMEWORK.GetIdentifier = function(playerId)
@@ -648,7 +632,16 @@ local function JobExists(jobName, grade)
     return job ~= nil and (job.grades or {})[tostring(grade)] ~= nil
 end
 
+local function OnlineTarget(target)
+    if type(target) ~= 'string' then return target end
+
+    local player = FN_FRAMEWORK.GetPlayerFromIdentifier(target)
+
+    return player and player.source or target
+end
+
 FN_FRAMEWORK.SetJob = function(target, jobName, grade)
+    target = OnlineTarget(target)
     grade = math.floor(tonumber(grade) or 0)
     if type(jobName) ~= 'string' or not JobExists(jobName, grade) then return false end
 
@@ -663,6 +656,7 @@ FN_FRAMEWORK.SetJob = function(target, jobName, grade)
 end
 
 FN_FRAMEWORK.RemoveJob = function(target, jobName)
+    target = OnlineTarget(target)
     if type(target) == 'number' then
         local job = FN_FRAMEWORK.GetJob(target)
         if not job or job.name ~= jobName then return false end

@@ -3,7 +3,7 @@ FN_BILLING = {}
 local B = FN_BILLING
 local Paying = {}
 
-FN_KNOWN['esx_billing'] = true
+FN_KNOWN['esx_billing'] = 'billing'
 
 local function Text(value, max)
     return type(value) == 'string' and value ~= '' and value:sub(1, max) or nil
@@ -103,6 +103,9 @@ local function PayEsx(playerId, id)
     local amount = row and math.floor(tonumber(row.amount) or 0)
     if not amount or amount < 1 then return false, 'unknown' end
 
+    local sender = row.target_type ~= 'society' and FN_FRAMEWORK.GetPlayerFromIdentifier(row.sender)
+    if row.target_type ~= 'society' and not sender then return false, 'offline' end
+
     local account = FN_FRAMEWORK.GetMoney(playerId, 'cash') >= amount and 'cash' or FN_FRAMEWORK.GetMoney(playerId, 'bank') >= amount and 'bank'
     if not account then return false, 'funds' end
     if (MySQL.update.await('DELETE FROM billing WHERE id = ? AND identifier = ?', { id, identifier }) or 0) ~= 1 then return false, 'unknown' end
@@ -116,8 +119,7 @@ local function PayEsx(playerId, id)
         local raw = FN_SOCIETY and FN_SOCIETY.Raw
         if raw then raw.AddMoney(row.target, amount) elseif FN_SOCIETY then FN_SOCIETY.AddMoney(tostring(row.target):gsub('^society_', ''), amount, 'bill') end
     else
-        local sender = FN_FRAMEWORK.GetPlayerFromIdentifier(row.sender)
-        if sender then FN_FRAMEWORK.AddMoney(sender.source, account, amount, 'Paid bill') end
+        FN_FRAMEWORK.AddMoney(sender.source, account, amount, 'Paid bill')
     end
     TriggerEvent('esx_billing:paidBill', playerId, id)
 

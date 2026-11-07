@@ -39,11 +39,7 @@ end
 
 FN_STASH = {
     CanOpen = function(playerId, kind, data)
-        if kind == 'player' then
-            local target = tonumber(data)
-            local a, b = GetPlayerPed(playerId), target and GetPlayerPed(target) or 0
-            return target and a ~= 0 and b ~= 0 and #(GetEntityCoords(a) - GetEntityCoords(b)) <= 3.0 and target or false
-        end
+        if kind ~= 'stash' then return false end
 
         local id = Id(type(data) == 'table' and data.id or data)
 

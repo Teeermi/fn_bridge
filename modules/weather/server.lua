@@ -4,7 +4,7 @@ local W = FN_WEATHER
 
 local Systems = { 'Renewed-Weathersync', 'qb-weathersync' }
 
-for _, resource in ipairs(Systems) do FN_KNOWN[resource] = true end
+for _, resource in ipairs(Systems) do FN_KNOWN[resource] = 'weather' end
 
 local Kinds = {
     RAIN = 'rain', CLEARING = 'rain', RAIN_HALLOWEEN = 'rain',

@@ -66,10 +66,12 @@ local function DirtyItem()
     return type(configured) == 'table' and configured.item or 'black_money'
 end
 
+local Accounts = { bank = 'bank', cash = 'cash', money = 'cash', black_money = 'black_money' }
+
 local function PositiveAmount(amount)
     amount = math.floor(tonumber(amount) or 0)
 
-    return amount > 0 and amount or nil
+    return amount > 0 and amount < 2 ^ 53 and amount or nil
 end
 
 local JobCache, JobCacheAt = nil, 0
@@ -206,8 +208,8 @@ FN_FRAMEWORK.GetPlayers = function()
 end
 
 FN_FRAMEWORK.GetMoney = function(playerId, accountName)
-    accountName = accountName or 'bank'
-    if not OxPlayer(playerId) then return 0 end
+    accountName = Accounts[accountName or 'bank']
+    if not accountName or not OxPlayer(playerId) then return 0 end
 
     local ok, value = pcall(function()
         if accountName == 'cash' then return exports.ox_inventory:GetItemCount(playerId, 'money') end
@@ -223,8 +225,8 @@ end
 
 FN_FRAMEWORK.AddMoney = function(playerId, accountName, amount, reason)
     amount = PositiveAmount(amount)
-    accountName = accountName or 'bank'
-    if not amount or not OxPlayer(playerId) then return false end
+    accountName = Accounts[accountName or 'bank']
+    if not amount or not accountName or not OxPlayer(playerId) then return false end
 
     local ok, done = pcall(function()
         if accountName == 'cash' then return exports.ox_inventory:AddItem(playerId, 'money', amount) == true end
@@ -241,8 +243,8 @@ end
 
 FN_FRAMEWORK.RemoveMoney = function(playerId, accountName, amount, reason)
     amount = PositiveAmount(amount)
-    accountName = accountName or 'bank'
-    if not amount or FN_FRAMEWORK.GetMoney(playerId, accountName) < amount then return false end
+    accountName = Accounts[accountName or 'bank']
+    if not amount or not accountName or FN_FRAMEWORK.GetMoney(playerId, accountName) < amount then return false end
 
     local ok, done = pcall(function()
         if accountName == 'cash' then return exports.ox_inventory:RemoveItem(playerId, 'money', amount) == true end
@@ -263,7 +265,16 @@ FN_FRAMEWORK.GetJob = function(playerId)
     return ActiveJob(playerId) or false
 end
 
+local function OnlineTarget(target)
+    if type(target) == 'number' then return target end
+
+    local player = FN_FRAMEWORK.GetPlayerFromIdentifier(target)
+
+    return player and player.source or target
+end
+
 FN_FRAMEWORK.SetJob = function(target, jobName, grade)
+    target = OnlineTarget(target)
     grade = math.floor(tonumber(grade) or 0)
     local job = FN_FRAMEWORK.GetJobs()[jobName]
     if not job or not job.grades[grade] then return false end
@@ -277,12 +288,16 @@ FN_FRAMEWORK.SetJob = function(target, jobName, grade)
     if type(target) == 'number' then
         if not OxPlayer(target) then return false end
 
-        local ok = pcall(function()
+        grade = math.max(grade, 1)
+        local ok, done = pcall(function()
             exports.ox_core:CallPlayer(target, 'setGroup', jobName, grade)
+            if tonumber(exports.ox_core:CallPlayer(target, 'getGroup', jobName)) ~= grade then return false end
             exports.ox_core:CallPlayer(target, 'setActiveGroup', jobName)
+
+            return true
         end)
 
-        return ok
+        return ok and done == true
     end
 
     return FN_FRAMEWORK.SetJobOffline(target, jobName, grade)
@@ -298,10 +313,18 @@ FN_FRAMEWORK.SetJobOffline = function(identifier, jobName, jobGrade)
 end
 
 FN_FRAMEWORK.RemoveJob = function(target, jobName)
+    target = OnlineTarget(target)
     if type(target) == 'number' then
         if not OxPlayer(target) then return false end
 
-        return pcall(function() exports.ox_core:CallPlayer(target, 'setGroup', jobName, 0) end)
+        local ok, done = pcall(function()
+            if not exports.ox_core:CallPlayer(target, 'getGroup', jobName) then return false end
+            exports.ox_core:CallPlayer(target, 'setGroup', jobName, 0)
+
+            return not exports.ox_core:CallPlayer(target, 'getGroup', jobName)
+        end)
+
+        return ok and done == true
     end
 
     local ok, affected = pcall(MySQL.update.await, 'DELETE FROM character_groups WHERE charId = ? AND name = ?', { tonumber(target), jobName })
@@ -416,6 +439,8 @@ FN_FRAMEWORK.SearchCharacters = function(query, limit)
     if #needle < 2 or #needle > 64 then return {} end
 
     local safe = needle:gsub('[%%_]', '')
+    if #safe < 2 then return {} end
+
     local rows = MySQL.query.await(('SELECT %s FROM characters WHERE deleted IS NULL AND (charId = ? OR stateId = ? OR fullName LIKE ?) LIMIT %d'):format(CharacterColumns, math.min(math.max(math.floor(tonumber(limit) or 10), 1), 10)), { tonumber(needle) or -1, needle, '%' .. safe .. '%' })
 
     local result = {}

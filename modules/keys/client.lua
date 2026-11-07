@@ -11,7 +11,7 @@ local Give = {
     { 'wasabi_carlock', function(_, plate) exports.wasabi_carlock:GiveKey(plate) end },
     { 'mk_vehiclekeys', function(vehicle) exports.mk_vehiclekeys:AddKey(vehicle) end },
     { 't1ger_keys', function(vehicle, plate) exports.t1ger_keys:GiveTemporaryKeys(plate, Model(vehicle), '') end },
-    { 'ak47_vehiclekeys', function(_, plate) exports.ak47_vehiclekeys:GiveKey(plate, false) end },
+    { 'ak47_vehiclekeys', function(_, plate) exports.ak47_vehiclekeys:GiveKey(plate) end },
     { 'cd_garage', function(_, plate) TriggerEvent('cd_garage:AddKeys', plate) end },
     { 'vehicles_keys', function(_, plate) TriggerServerEvent('vehicles_keys:selfGiveVehicleKeys', plate) end },
     { 'okokGarage', function(_, plate) TriggerServerEvent('okokGarage:GiveKeys', plate) end },

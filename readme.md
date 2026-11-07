@@ -210,6 +210,8 @@ Console: `fnb_doctor` (what was picked and what is missing), `fnb_selftest` (no 
 | `needs fn_bridge 1.0.0 or newer` | download the latest release, replace the folder |
 | `Couldn't start resource ...: dependency fn_bridge` | fn_bridge is missing or not started |
 | `setr fn_bridge:notify is "x" which nothing here implements` | typo in `server.cfg`, the message lists valid values |
+| `setr fn_bridge:inventory is "x", which fn_bridge does not know` | typo in `server.cfg`, same for `framework`, `target` and `society`. The message lists valid values |
+| `setr fn_bridge:voice is "x" but no resource has that name` | typo in `server.cfg`, same for `dispatch`, `phone` and `weather` |
 | `TARGET.AddBoxZone is not available` | no target resource runs, or `fn_bridge:target` names one that isn't started |
 
 Support: https://fivenuts.dev

@@ -66,7 +66,7 @@ Schemas.qbx = Schemas.qb
 
 local Warned = {}
 
-for _, resource in ipairs({ 'qb-garages', 'qbx_garages', 'esx_garage', 'jg-advancedgarages', 'cd_garage' }) do FN_KNOWN[resource] = true end
+for _, resource in ipairs({ 'qb-garages', 'qbx_garages', 'esx_garage', 'jg-advancedgarages', 'cd_garage' }) do FN_KNOWN[resource] = 'garages' end
 
 local function WarnOnce(key, message, ...)
     if Warned[key] then return end
@@ -109,6 +109,13 @@ local function Percent(value, max)
     if not value then return nil end
 
     return math.floor(math.max(0, math.min(1, value / max)) * 100 + 0.5)
+end
+
+local function Motor(value)
+    value = tonumber(value)
+    if not value then return nil end
+
+    return math.floor(math.max(0, math.min(100, (value - 100) / 9)) + 0.5)
 end
 
 local function Columns(schema)
@@ -220,7 +227,7 @@ local function BuildVehicle(schema, columns, row)
         garage = type(garage) == 'string' and garage or (schema.garage and row[schema.garage]) or '',
         kind = schema.kind and row[schema.kind] or nil,
         fuel = Percent(schema.fuel and row[schema.fuel] or props.fuelLevel, 100),
-        engine = Percent(schema.engine and row[schema.engine] or props.engineHealth, 1000),
+        engine = Motor(schema.engine and row[schema.engine] or props.engineHealth),
         body = Percent(schema.body and row[schema.body] or props.bodyHealth, 1000),
     }
 end
@@ -332,7 +339,7 @@ local function VrpRows(where, value)
             stored = tonumber(row.detido) ~= 1,
             garage = '',
             fuel = Percent(row.fuel, 100),
-            engine = Percent(row.engine, 1000),
+            engine = Motor(row.engine),
             body = Percent(row.body, 1000),
         }
     end

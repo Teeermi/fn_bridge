@@ -17,7 +17,7 @@ end
 local function PositiveAmount(amount)
     amount = math.floor(tonumber(amount) or 0)
 
-    return amount > 0 and amount or nil
+    return amount > 0 and amount < 2 ^ 53 and amount or nil
 end
 
 local function DirtyMoney()
@@ -147,7 +147,16 @@ local function JobExists(jobName, grade)
     return job ~= nil and job.grades[grade] ~= nil
 end
 
+local function OnlineTarget(target)
+    if type(target) ~= 'string' then return target end
+
+    local player = FN_FRAMEWORK.GetPlayerFromIdentifier(target)
+
+    return player and player.source or target
+end
+
 FN_FRAMEWORK.SetJob = function(target, jobName, grade)
+    if not IsQbx then target = OnlineTarget(target) end
     grade = math.floor(tonumber(grade) or 0)
     if type(jobName) ~= 'string' or not JobExists(jobName, grade) then return false end
 
@@ -172,6 +181,7 @@ FN_FRAMEWORK.RemoveJob = function(target, jobName)
         return ok and result ~= false
     end
 
+    target = OnlineTarget(target)
     if type(target) == 'number' then
         local job = FN_FRAMEWORK.GetJob(target)
         if not job or job.name ~= jobName then return false end
