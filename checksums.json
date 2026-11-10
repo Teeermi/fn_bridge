@@ -4,7 +4,7 @@
  "fn_bridge_custom/client.lua": "811c9dc5",
  "fn_bridge_custom/fxmanifest.lua": "377d4c58",
  "fn_bridge_custom/server.lua": "811c9dc5",
- "fxmanifest.lua": "4cb9bfe6",
+ "fxmanifest.lua": "05a403af",
  "import.lua": "662d5725",
  "modules/appearance/client.lua": "1840161f",
  "modules/appearance/server.lua": "b9923e23",
@@ -95,7 +95,7 @@
  "modules/voice/client.lua": "e6df5c14",
  "modules/voice/server.lua": "de7fac16",
  "modules/weather/server.lua": "c9293047",
- "server.lua": "0840f46a",
+ "server.lua": "647da757",
  "shared/init.lua": "03b8f31f",
  "shared/settings.lua": "a85a250b",
  "snippets.lua": "8a6e1a5f"

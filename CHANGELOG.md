@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.6.3 (2026-11-10)
+
+Added
+- New setDuty hook, the pair of the duty hook. SetJobDuty asks it first, so a job core that keeps its own duty can also switch it. Return nil for jobs your core does not track and fn_bridge uses the framework duty.
+
 ## 1.6.2 (2026-11-07)
 
 Before you update

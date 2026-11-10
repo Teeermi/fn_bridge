@@ -208,6 +208,7 @@ end)
 | `dirtyMoney` | server | a table, not a function | Black money item |
 | `gang` | server | `playerId`, returns a gang table | The player's gang (organisation) |
 | `duty` | server | `playerId`, returns a boolean | On or off duty, for a job core that counts it |
+| `setDuty` | server | `playerId, on`, returns `true` when the change worked | Going on or off duty from a script, for a job core that counts it. Return `nil` for jobs your core doesn't track |
 | `multijob` | server | `{ list, set, add }` | Several jobs per character |
 | `insurance` | server | `identifier`, returns `{ active, plan, expires }` | Health insurance |
 | `jail` | server | `{ send, release, get, offline }` | Your prison script. `offline(identifier)` returns minutes left for a character on the select screen |
@@ -226,7 +227,7 @@ end)
 | `fuel` | client | `vehicle`, returns 0 to 100 | Fuel level |
 | `FRAMEWORK.AddMoney`, `INVENTORY.AddItem`, ... | both | same as in [API.md](API.md) | That one function, completely. Any function of any namespace, by its full name |
 
-A reader (`name`, `job`, `phone`, `gang`, `duty`) that returns `nil` falls back to what fn_bridge finds on its own. A full name like `FRAMEWORK.AddMoney` doesn't fall back, it replaces the function, so a server whose core was rewritten can still run every FIVENUTS script without touching fn_bridge. Stopping `fn_bridge_custom` removes its hooks.
+A reader (`name`, `job`, `phone`, `gang`, `duty`) or `setDuty` that returns `nil` falls back to what fn_bridge finds on its own. A full name like `FRAMEWORK.AddMoney` doesn't fall back, it replaces the function, so a server whose core was rewritten can still run every FIVENUTS script without touching fn_bridge. Stopping `fn_bridge_custom` removes its hooks.
 
 **One script needs something different?** The same keys work in that script's `Config.Bridge`, and they win over `fn_bridge_custom` for that script only. Client functions there only work from a config file the script also loads on the client (`shared_scripts` or `client_scripts`).
 

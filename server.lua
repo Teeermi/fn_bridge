@@ -145,6 +145,7 @@ Finish = function()
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetPhoneNumber', 'phone')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetGang', 'gang')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'CheckJobDuty', 'duty')
+    FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'SetJobDuty', 'setDuty')
 
     isReady = true
     CreateThread(function()
