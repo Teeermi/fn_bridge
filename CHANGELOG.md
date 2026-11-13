@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.6.4 (2026-11-13)
+
+Added
+- CHARACTERS.Balance(key, account) reads the bank or cash balance of an offline character. CHARACTERS.Money still returns both added together.
+
 ## 1.6.3 (2026-11-10)
 
 Added

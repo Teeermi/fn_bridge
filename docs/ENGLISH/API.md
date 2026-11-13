@@ -231,6 +231,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `IsLoaded` | `playerId` | boolean |
 | `StarterItems` | `playerId` | array of `{ item, amount, meta }` from the framework's starter list |
 | `Money` | `key` | cash + bank of an offline character, or `nil` |
+| `Balance` | `key`, `account` (`bank` or `cash`) | one account of an offline character, or `nil` |
 | `Dossier` | `key` | `{ veh, lic, rec, jail }`: vehicles, licences, fines, jail time |
 | `Spawns` | `playerId`, `key`, `isNew` | points from the `spawns` hook and `exclusive` (`true` = use only these), `{}, false` without a hook |
 

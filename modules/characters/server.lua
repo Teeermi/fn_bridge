@@ -266,7 +266,7 @@ end
 
 local function qbMoney(key)
     local m = decode(MySQL.scalar.await('SELECT money FROM players WHERE citizenid = ?', { key }))
-    return m and (tonumber(m.cash) or 0) + (tonumber(m.bank) or 0) or nil
+    return m and { cash = tonumber(m.cash) or 0, bank = tonumber(m.bank) or 0 } or nil
 end
 
 local IMPL = {}
@@ -340,7 +340,7 @@ IMPL.esx = {
     loaded = function(src) return FN_FRAMEWORK.RawPlayer(src) ~= nil end,
     money = function(key)
         local a = decode(MySQL.scalar.await('SELECT accounts FROM users WHERE identifier = ?', { key }))
-        return a and (tonumber(a.money) or 0) + (tonumber(a.bank) or 0) or nil
+        return a and { cash = tonumber(a.money) or 0, bank = tonumber(a.bank) or 0 } or nil
     end,
     dossier = function(key)
         local d = {}
@@ -463,7 +463,7 @@ end
 local function oxMoney(key)
     local r = MySQL.single.await([[SELECT a.balance, i.inventory FROM characters c LEFT JOIN accounts a ON a.owner = c.charId AND a.isDefault = 1
         LEFT JOIN character_inventory i ON i.charId = c.charId WHERE c.charId = ?]], { key })
-    return r and (tonumber(r.balance) or 0) + oxCash(r.inventory) or nil
+    return r and { cash = oxCash(r.inventory), bank = tonumber(r.balance) or 0 } or nil
 end
 
 local function oxDossier(key)
@@ -587,7 +587,14 @@ end
 FN_CHARACTERS.Logout = function(src) return call('logout', src) == true end
 FN_CHARACTERS.IsLoaded = function(src) return call('loaded', src) == true end
 FN_CHARACTERS.StarterItems = function(src) return call('starter', src) or {} end
-FN_CHARACTERS.Money = function(key) return call('money', key) end
+FN_CHARACTERS.Money = function(key)
+    local m = call('money', key)
+    return m and m.cash + m.bank or nil
+end
+FN_CHARACTERS.Balance = function(key, account)
+    local m = call('money', key)
+    return m and m[account == 'cash' and 'cash' or 'bank'] or nil
+end
 FN_CHARACTERS.Dossier = function(key) return call('dossier', key) end
 
 FN_CHARACTERS.TakeOver = function()
