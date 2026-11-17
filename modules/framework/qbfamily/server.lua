@@ -124,6 +124,7 @@ local function Group(group)
         grade_label = grade.name or '',
         isBoss = group.isboss == true or grade.isboss == true,
         onDuty = group.onduty ~= false,
+        type = group.type,
     }
 end
 

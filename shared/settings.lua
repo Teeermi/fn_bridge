@@ -9,6 +9,14 @@ local setupCommand = Convar('setup', 'setup')
 local admins = {}
 for name in Convar('admins', 'admin,superadmin,god'):gmatch('[^%s,]+') do admins[#admins + 1] = name end
 
+local jobTypes = {}
+for kind, list in pairs({
+    ems = Convar('ems', 'ambulance,ems,lsfd,safd,fire,firefighter,doctor,medic'),
+    leo = Convar('police', 'police,sheriff,lspd,lssd,bcso,sasp,sast,sahp,hwp,trooper,statepolice,usms,marshal,fib,fbi,dea,ranger,secretservice'),
+}) do
+    for name in list:gmatch('[^%s,]+') do jobTypes[name:lower()] = kind end
+end
+
 Config = {
     ResourceName = GetCurrentResourceName(),
     Debug = Convar('debug', 'false') == 'true',
@@ -25,6 +33,7 @@ Config = {
     Voice = Convar('voice', 'auto'),
     Weather = Convar('weather', 'auto'),
     AdminGroups = admins,
+    JobTypes = jobTypes,
     Counter = {
         dutyAware = false,
         jobs = { 'police', 'ambulance' },

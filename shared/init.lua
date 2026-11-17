@@ -112,6 +112,11 @@ FN_BRIDGE.Hookable = function(target, name, key)
     target[name] = wrapper
 end
 
+FN_BRIDGE.JobType = function(name, given)
+    if given == 'leo' or given == 'ems' then return given end
+    return type(name) == 'string' and Config.JobTypes[name:lower()] or nil
+end
+
 FN_BRIDGE.Guarded = function(target, key, name, guard)
     local adapter = target[name]
     local wrapper = function(...) return guard(adapter, ...) end

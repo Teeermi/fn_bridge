@@ -110,7 +110,7 @@ Returned by `GetPlayerFromId` and `GetPlayerFromIdentifier`. Every field is alwa
 | `GetMoney` | `playerId`, `account` | number | no |
 | `AddMoney` | `playerId`, `account`, `amount`, `reason` | boolean | no |
 | `RemoveMoney` | `playerId`, `account`, `amount`, `reason` | boolean, `false` when there isn't enough | no |
-| `GetJob` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss, onDuty }`, or `false` | no |
+| `GetJob` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss, onDuty, type }`, or `false`. `type` is `'leo'`, `'ems'` or `nil`, see `fn_bridge:police` | no |
 | `SetJob` | `playerId` or `identifier`, `jobName`, `grade` | boolean, online or offline, checks the job exists. An online player's identifier changes the live player. vRP keeps groups in memory, so an offline user there returns `false` | maybe |
 | `RemoveJob` | `playerId` or `identifier`, `jobName` | boolean (fires from that job) | maybe |
 | `GetGang` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss }`, or `false` | no |

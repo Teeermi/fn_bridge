@@ -142,6 +142,11 @@ Finish = function()
     ReportForcedResources()
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetName', 'name')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetJob', 'job')
+    FN_BRIDGE.Guarded(FN_BRIDGE.FRAMEWORK, 'job', 'GetJob', function(adapter, ...)
+        local job = adapter(...)
+        if type(job) == 'table' then job.type = FN_BRIDGE.JobType(job.name, job.type) end
+        return job
+    end)
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetPhoneNumber', 'phone')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetGang', 'gang')
     FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'CheckJobDuty', 'duty')

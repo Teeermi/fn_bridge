@@ -136,6 +136,12 @@ local function Tier19(framework, one)
         return again == false and set and count == 3 and deleted and not FRAMEWORK.GetJobs()[name], ('again %s set %s count %d deleted %s'):format(tostring(again), tostring(set), count, tostring(deleted))
     end)
 
+    Check('JobType reads framework type and the job lists', function()
+        local a, b, c, d = B.JobType('USMS'), B.JobType('ambulance'), B.JobType('mystery', 'leo'), B.JobType('mystery', 'job')
+
+        return a == 'leo' and b == 'ems' and c == 'leo' and d == nil, ('%s %s %s %s'):format(tostring(a), tostring(b), tostring(c), tostring(d))
+    end)
+
     Check('IsSupported follows the picked adapter', function()
         local jail = B.JAIL.Name()
         local release = jail == 'hook' or B.IsSupported('JAIL', 'Release') == (jail ~= false and jail ~= 'pickle_prisons')
@@ -761,7 +767,11 @@ local function TierB(playerId)
         return player and FRAMEWORK.GetIdentifier(playerId) == player.identifier, tostring(FRAMEWORK.GetIdentifier(playerId))
     end)
 
-    Check('GetJob', function() return type(FRAMEWORK.GetJob(playerId)) == 'table' or FN_BRIDGE.IsFramework('standalone') end)
+    Check('GetJob', function()
+        local job = FRAMEWORK.GetJob(playerId)
+
+        return type(job) == 'table' and (job.type == nil or job.type == 'leo' or job.type == 'ems') or FN_BRIDGE.IsFramework('standalone'), type(job) == 'table' and tostring(job.type) or tostring(job)
+    end)
 
     for _, account in ipairs({ 'bank', 'cash' }) do
         Check('money round trip: ' .. account, function()

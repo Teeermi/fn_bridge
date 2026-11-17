@@ -82,6 +82,8 @@ setr fn_bridge:inventory "ox_inventory"
 | `fn_bridge:radioTalk` | from `fn_bridge:voice` | Push to talk command of a modified voice script, without the `+`. Set it when your pma-voice renamed `+radiotalk` |
 | `fn_bridge:weather` | `auto` | Which weather script the WEATHER module reads: `Renewed-Weathersync`, `qb-weathersync`, or `none` |
 | `fn_bridge:admins` | `admin,superadmin,god` | Your staff groups, see [Admins](#admins) |
+| `fn_bridge:police` | `police,sheriff,lspd,bcso,usms,...` | Jobs scripts treat as police, for example who can open a police lookup. QBCore and QBox jobs with `type = 'leo'` count without being listed. `none` leaves only those |
+| `fn_bridge:ems` | `ambulance,ems,lsfd,...` | Same for medics. QBCore and QBox jobs with `type = 'ems'` count on their own |
 | `fn_bridge:debug` | `false` | Shows what was detected and draws target zones |
 | `fn_bridge:tunnel` | `off` | `on` when web pages of fivenuts scripts go through a Cloudflare Tunnel or a proxy on this machine, see [PROTECTION.md](PROTECTION.md) |
 

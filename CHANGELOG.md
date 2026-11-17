@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.6.5 (2026-11-17)
+
+Added
+- GetJob returns type 'leo' for police jobs and 'ems' for medics. QBCore and Qbox take it from the job's type, other frameworks from the new fn_bridge:police and fn_bridge:ems convars, which already list common names like sheriff, bcso, usms and lsfd. Scripts use it to let every police job into police tools without listing each one in their config.
+
 ## 1.6.4 (2026-11-13)
 
 Added
