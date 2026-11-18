@@ -208,8 +208,9 @@ A vehicle:
 | `Give` | `playerId, vehicle, plate` | Gives the player keys through the key script that runs |
 | `Remove` | `playerId, vehicle, plate` | Takes the keys back |
 | `SetLocked` | `vehicle, locked` | Locks or unlocks the doors on the server and on the client that owns the car |
+| `Has` | `playerId, vehicle, plate` | `true` or `false` when fn_garages, qbx_vehiclekeys or a hook can tell whether the player holds keys, `nil` when nothing can |
 
-A key script that keeps its own lock state replaces `KEYS.SetLocked` in `fn_bridge_custom` with a function of the same arguments.
+A key script that keeps its own lock state replaces `KEYS.SetLocked` in `fn_bridge_custom` with a function of the same arguments. A key script that keeps keys as items or in its own table answers `KEYS.Has` the same way, so fnPhone does not raise the car alarm for someone who holds keys.
 
 ## FN_BRIDGE.CHARACTERS (server)
 

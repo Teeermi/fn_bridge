@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.6.6 (2026-11-18)
+
+Added
+- KEYS.Has(playerId, vehicle, plate) tells whether a player holds keys to a car. It asks fn_garages and qbx_vehiclekeys and returns nil when no key script can answer. Servers with their own key items answer it with a KEYS.Has hook in fn_bridge_custom. The FutureRP preset now checks the kluczyki item by plate.
+
 ## 1.6.5 (2026-11-17)
 
 Added

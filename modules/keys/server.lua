@@ -33,6 +33,18 @@ FN_KEYS.Give = function(playerId, vehicle, plate)
     return true
 end
 
+FN_KEYS.Has = function(playerId, vehicle, plate)
+    if Garages() then
+        local ok, has = pcall(function() return exports.fn_garages:HasKey(playerId, plate) end)
+        if ok and has then return true end
+    end
+    if vehicle and DoesEntityExist(vehicle) and GetResourceState('qbx_vehiclekeys') == 'started' then
+        local ok, has = pcall(function() return exports.qbx_vehiclekeys:HasKeys(playerId, vehicle) end)
+        if ok then return has == true end
+    end
+    return nil
+end
+
 FN_KEYS.SetLocked = function(vehicle, locked)
     if not vehicle or not DoesEntityExist(vehicle) then return false end
     if Garages() and pcall(function() exports.fn_garages:SetLocked(vehicle, locked == true) end) then return true end
