@@ -232,12 +232,28 @@ V.GetRadio = function(playerId)
     return radioOf[playerId] or 0
 end
 
+local function RadioHook(playerId, channel)
+    local fn = FN_BRIDGE.Setting('radio')
+    if not FN_BRIDGE.Callable(fn) then return nil end
+    local ok, done = pcall(fn, playerId, channel)
+    if not ok then return false end
+
+    return done
+end
+
 V.SetRadio = function(playerId, channel)
     playerId, channel = Online(playerId), tonumber(channel)
-    local name = V.Name()
-    if not playerId or not channel or channel < 0 or channel > 100000 or not name or not Radio[name] then return false end
+    if not playerId or not channel or channel < 0 or channel > 100000 then return false end
 
     channel = math.floor(channel)
+    local hooked = RadioHook(playerId, channel)
+    if hooked ~= nil then
+        if hooked ~= false then radioOf[playerId] = channel > 0 and channel or nil end
+        return hooked ~= false
+    end
+
+    local name = V.Name()
+    if not name or not Radio[name] then return false end
     local ok = pcall(Radio[name].set, playerId, channel)
     if ok then radioOf[playerId] = channel > 0 and channel or nil end
 

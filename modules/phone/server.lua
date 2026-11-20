@@ -99,6 +99,10 @@ local Message = {
     end,
 }
 
+local Has = {
+    ['fn_phone'] = function(playerId) return exports['fn_phone']:hasPhone(playerId) end,
+}
+
 FN_PHONE.Name = function()
     local forced = Config.Phone
     if forced == 'none' then return false end
@@ -132,6 +136,18 @@ FN_PHONE.Number = function(playerId)
     if number == nil or number == false or number == '' then number = FN_BRIDGE.FRAMEWORK.GetPhoneNumber(playerId) end
 
     return (type(number) == 'string' or type(number) == 'number') and tostring(number) ~= '' and tostring(number) or false
+end
+
+FN_PHONE.Has = function(playerId)
+    playerId = Online(playerId)
+    if not playerId then return false end
+
+    local resource = FN_PHONE.Name()
+    local check = resource and Has[resource]
+    local has = check and Call(check, playerId)
+    if has ~= nil then return has == true end
+
+    return FN_INVENTORY ~= nil and (tonumber(Call(FN_INVENTORY.GetItemCount, playerId, 'phone')) or 0) > 0
 end
 
 FN_PHONE.Notify = function(playerId, notification)

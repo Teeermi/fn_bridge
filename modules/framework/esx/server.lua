@@ -580,16 +580,22 @@ FN_FRAMEWORK.AddMoney = function(playerId, accountName, amount, reason)
     local account = FN_FRAMEWORK.ResolveAccount(accountName or 'bank')
     if not amount or not Call(xPlayer, 'getAccount', account) then return false end
 
-    return select(2, Call(xPlayer, 'addAccountMoney', account, amount, reason or 'fn_bridge'))
+    local before = Balance(xPlayer, account)
+    Call(xPlayer, 'addAccountMoney', account, amount, reason or 'fn_bridge')
+
+    return Balance(xPlayer, account) >= before + amount
 end
 
 FN_FRAMEWORK.RemoveMoney = function(playerId, accountName, amount, reason)
     amount = PositiveAmount(amount)
     local xPlayer = XPlayer(playerId)
     local account = FN_FRAMEWORK.ResolveAccount(accountName or 'bank')
-    if not amount or not xPlayer or FN_FRAMEWORK.GetMoney(playerId, accountName) < amount then return false end
+    local before = amount and xPlayer and Balance(xPlayer, account)
+    if not before or before < amount then return false end
 
-    return select(2, Call(xPlayer, 'removeAccountMoney', account, amount, reason or 'fn_bridge'))
+    Call(xPlayer, 'removeAccountMoney', account, amount, reason or 'fn_bridge')
+
+    return Balance(xPlayer, account) <= before - amount
 end
 
 local ReverseAccounts = { money = 'cash', bank = 'bank', black_money = 'black_money' }

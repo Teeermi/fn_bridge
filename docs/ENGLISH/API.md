@@ -597,6 +597,7 @@ Added in 1.0.1. Sends things to the player's phone, whatever phone the server ru
 | `Name` | none | the phone resource in use, or `false` |
 | `Supports` | `'notify'`, `'mail'`, `'message'` or `'number'` | boolean for the phone in use |
 | `Number` | `playerId` | the phone number as text (from the phone, else the framework), or `false` |
+| `Has` | `playerId` | `true` when the player carries a phone. fn_phone counts every phone model it knows, other phones fall back to a `phone` item |
 | `Notify` | `playerId`, `{ title, body, app, icon, color }` | the phone resource that showed it, or `false` |
 | `Mail` | `playerId` or a character identifier, `{ sender, subject, message }` | the phone resource that got it, or `false` |
 | `Message` | `fromNumber`, `playerId` or a number, `text` | the phone resource that sent it, or `false` |
@@ -686,7 +687,9 @@ end
 
 Phone calls: put every player in a call on the same `callId` with `SetCall`. fn_bridge keeps who is in which call and joins them the way the voice script wants it (a call channel on pma-voice and mumble-voip, player pairs on SaltyChat and YACA). `MuteCall` silences a player for the other side only; on pma-voice and mumble-voip the others' clients turn that player down while people standing next to them (4 m) still hear them. A player who drops leaves the call and the radio.
 
-Radio is the primary channel. A radio item script on top (mm_radio, qb-radio) keeps working, it sees the change from the voice resource. `setr fn_bridge:voice` picks the voice script, `none` turns calls and radio off. The local client event `fn_bridge:radioTalking` (`serverId` or `nil` for yourself, `talking`) fires when someone on your channel talks (pma-voice).
+Radio is the primary channel. A radio item script on top (mm_radio, qb-radio) keeps working, it sees the change from the voice resource. `setr fn_bridge:voice` picks the voice script, `none` turns calls and radio off. The local client event `fn_bridge:radioTalking` (`serverId` or `nil` for yourself, `talking`) fires when someone on your channel talks (pma-voice). The local client event `fn_bridge:radioChannel` (`channel`) fires when the player's radio channel changes, whoever changed it (pma-voice, SaltyChat).
+
+A radio script that keeps its own state (its own HUD, member list or access rules) takes over `SetRadio` with the `radio` hook on the server: `fn(playerId, channel)` returns `true` when it joined or left, `false` when it refused, or `nil` to let the voice script do it. Other scripts that set the radio (the fn_phone Radio app) then go through the radio script and its rules.
 
 Another voice script plugs in with the `voice` hook: `{ call = fn(playerId, callId), radio = fn(playerId, channel), getRadio = fn(playerId), radioCount = fn(channel), mute = fn(playerId, on), mumble = true }` on the server (`call` and `radio` are the ones that matter, `mute` returns `true` when it muted), and `{ radioEnabled = fn(on), radioTalk = fn(on) }` on the client.
 

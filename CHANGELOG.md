@@ -1,5 +1,15 @@
 # fn_bridge changelog
 
+## 1.6.7 (2026-11-20)
+
+Added
+- PHONE.Has(playerId) tells whether a player carries a phone. With fn_phone it counts every phone model the server sells, so a chat command like /twt can check it instead of one item name.
+- New radio hook on the server. A radio item script with its own HUD or access rules takes over SetRadio, so the fn_phone Radio app joins and leaves channels through it.
+- The client event fn_bridge:radioChannel fires when the player's radio channel changes, whoever changed it. Works with pma-voice and SaltyChat.
+
+Fixed
+- On ESX, AddMoney and RemoveMoney check the balance after the call. A build that refuses the change without an error no longer counts as paid, so a phone transfer cannot go through while the sender keeps the money.
+
 ## 1.6.6 (2026-11-18)
 
 Added

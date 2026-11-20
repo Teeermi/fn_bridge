@@ -198,6 +198,14 @@ FN_VOICE.RadioTalk = function(on)
     return true
 end
 
+AddStateBagChangeHandler('radioChannel', ('player:%d'):format(GetPlayerServerId(PlayerId())), function(_, _, value)
+    TriggerEvent('fn_bridge:radioChannel', math.floor(tonumber(value) or 0))
+end)
+
+AddEventHandler('SaltyChat_RadioChannelChanged', function(channel, primary)
+    if primary ~= false then TriggerEvent('fn_bridge:radioChannel', math.floor(tonumber(channel) or 0)) end
+end)
+
 AddEventHandler('pma-voice:setTalkingOnRadio', function(serverId, talking)
     TriggerEvent('fn_bridge:radioTalking', tonumber(serverId), talking == true)
 end)

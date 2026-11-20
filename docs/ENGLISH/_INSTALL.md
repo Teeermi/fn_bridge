@@ -224,6 +224,7 @@ end)
 | `appearance` | both | client `{ set, restore, apply, creator }`, server `{ skin }` | Wearing an outfit and taking it off, dressing a preview ped from saved data, opening the creator for a new character, reading a skin your clothing script keeps in its own table. See [API.md](API.md#appearance) |
 | `spawns` | server | `playerId, identifier, isNew`, returns a list of points and `exclusive` | Extra spawn points on the character select, for a motel script for example |
 | `voice` | both | server `{ call, radio, getRadio, radioCount, mute, mumble }`, client `{ radioEnabled, radioTalk, ghost }` | Phone calls and the radio in your voice script. `ghost(on)` lets players who are out of a minigame talk only to each other |
+| `radio` | server | `fn(playerId, channel)` returning `true`, `false` or `nil` | Your radio item script joins and leaves channels for fn_bridge, so the phone Radio app shows up in its HUD and follows its access rules. `nil` hands the change to the voice script |
 | `weather` | server | a function returning the weather name, or `{ weather, time }` | Your weather script. Return a GTA weather name (`RAIN`, `THUNDER`) or `clear`, `rain`, `storm`, `snow`, `fog`; `time` returns the hour 0 to 23 |
 | `phoneNumber` | server | `{ get, taken, set, check, relog }` | Changing a character's phone number in a phone that keeps its own numbers |
 | `fuel` | client | `vehicle`, returns 0 to 100 | Fuel level |
