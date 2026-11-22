@@ -113,7 +113,7 @@ FN_BRIDGE.Hookable = function(target, name, key)
 end
 
 FN_BRIDGE.JobType = function(name, given)
-    if given == 'leo' or given == 'ems' then return given end
+    if given == 'leo' or given == 'ems' or given == 'mechanic' then return given end
     return type(name) == 'string' and Config.JobTypes[name:lower()] or nil
 end
 

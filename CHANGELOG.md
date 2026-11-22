@@ -1,5 +1,10 @@
 # fn_bridge changelog
 
+## 1.6.8 (2026-11-22)
+
+Added
+- GetJob returns type 'mechanic' for mechanic jobs. QBCore and QBox jobs with type = 'mechanic' count on their own, other frameworks use the new fn_bridge:mechanic convar (mechanic, mechanik, bennys, lscustoms and a few more by default). fn_phone uses it so a mechanic on duty can drive a customer's car without setting off the alarm.
+
 ## 1.6.7 (2026-11-20)
 
 Added

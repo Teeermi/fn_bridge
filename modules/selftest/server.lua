@@ -137,9 +137,9 @@ local function Tier19(framework, one)
     end)
 
     Check('JobType reads framework type and the job lists', function()
-        local a, b, c, d = B.JobType('USMS'), B.JobType('ambulance'), B.JobType('mystery', 'leo'), B.JobType('mystery', 'job')
+        local a, b, c, d, e, f = B.JobType('USMS'), B.JobType('ambulance'), B.JobType('mystery', 'leo'), B.JobType('mystery', 'job'), B.JobType('Bennys'), B.JobType('mystery', 'mechanic')
 
-        return a == 'leo' and b == 'ems' and c == 'leo' and d == nil, ('%s %s %s %s'):format(tostring(a), tostring(b), tostring(c), tostring(d))
+        return a == 'leo' and b == 'ems' and c == 'leo' and d == nil and e == 'mechanic' and f == 'mechanic', ('%s %s %s %s %s %s'):format(tostring(a), tostring(b), tostring(c), tostring(d), tostring(e), tostring(f))
     end)
 
     Check('IsSupported follows the picked adapter', function()
@@ -770,7 +770,7 @@ local function TierB(playerId)
     Check('GetJob', function()
         local job = FRAMEWORK.GetJob(playerId)
 
-        return type(job) == 'table' and (job.type == nil or job.type == 'leo' or job.type == 'ems') or FN_BRIDGE.IsFramework('standalone'), type(job) == 'table' and tostring(job.type) or tostring(job)
+        return type(job) == 'table' and (job.type == nil or job.type == 'leo' or job.type == 'ems' or job.type == 'mechanic') or FN_BRIDGE.IsFramework('standalone'), type(job) == 'table' and tostring(job.type) or tostring(job)
     end)
 
     for _, account in ipairs({ 'bank', 'cash' }) do

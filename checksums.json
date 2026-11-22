@@ -4,7 +4,7 @@
  "fn_bridge_custom/client.lua": "811c9dc5",
  "fn_bridge_custom/fxmanifest.lua": "377d4c58",
  "fn_bridge_custom/server.lua": "811c9dc5",
- "fxmanifest.lua": "4c5fad7b",
+ "fxmanifest.lua": "0b94076c",
  "import.lua": "662d5725",
  "modules/appearance/client.lua": "1840161f",
  "modules/appearance/server.lua": "b9923e23",
@@ -78,7 +78,7 @@
  "modules/picker/client.lua": "108ef4e5",
  "modules/prefs/client.lua": "4e020ccf",
  "modules/progress/client.lua": "b9114c10",
- "modules/selftest/server.lua": "66aa62a7",
+ "modules/selftest/server.lua": "78c86d20",
  "modules/setup/client.lua": "eb417d79",
  "modules/setup/server.lua": "eab40860",
  "modules/society/Renewed-Banking/server.lua": "e18e4a9f",
@@ -96,7 +96,7 @@
  "modules/voice/server.lua": "f4b4cf3c",
  "modules/weather/server.lua": "c9293047",
  "server.lua": "db76df85",
- "shared/init.lua": "9a9133ea",
- "shared/settings.lua": "af5887ef",
+ "shared/init.lua": "155b68ec",
+ "shared/settings.lua": "5ba407aa",
  "snippets.lua": "8a6e1a5f"
 }

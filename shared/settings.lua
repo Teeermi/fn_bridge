@@ -13,6 +13,7 @@ local jobTypes = {}
 for kind, list in pairs({
     ems = Convar('ems', 'ambulance,ems,lsfd,safd,fire,firefighter,doctor,medic'),
     leo = Convar('police', 'police,sheriff,lspd,lssd,bcso,sasp,sast,sahp,hwp,trooper,statepolice,usms,marshal,fib,fbi,dea,ranger,secretservice'),
+    mechanic = Convar('mechanic', 'mechanic,mechanik,mecano,bennys,lscustoms,lsc,tuner,tuners'),
 }) do
     for name in list:gmatch('[^%s,]+') do jobTypes[name:lower()] = kind end
 end
