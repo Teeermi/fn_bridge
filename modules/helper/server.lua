@@ -44,29 +44,18 @@ FN_HELPER.SendLog = function(webhookUrl, playerIdOrTitle, content, scriptName)
 
     if tonumber(_source) then
         playerName = GetPlayerName(_source) or 'Unknown'
-        for k, v in ipairs(GetPlayerIdentifiers(_source)) do
-            if string.sub(v, 1, string.len("steam:")) == "steam:" then
-                steamID = v
-            elseif string.sub(v, 1, string.len("license:")) == "license:" then
-                licenseID = v
-            elseif string.sub(v, 1, string.len("discord:")) == "discord:" then
-                discordID = v
-            end
-        end
+        local identifiers = FN_HELPER.GetIdentifiers(_source)
+        steamID = identifiers.steam and ('steam:'..identifiers.steam) or steamID
+        licenseID = identifiers.license and ('license:'..identifiers.license) or licenseID
+        discordID = identifiers.discord and ('discord:'..identifiers.discord) or discordID
     end
 
-    local EmbedData = {
-        {
-            ['title'] = tonumber(_source) and ('Player: ['.._source..'] '..playerName..'\nSteam: '..steamID..'\nLicense: '..licenseID..'\nDiscord: '..discordID) or playerIdOrTitle,
-            ['description'] = content,
-            ['color'] = '255',
-            ['footer'] = {
-                ['text'] = os.date("%Y/%m/%d %X")..' - https://fivenuts.dev/ - '..scriptName,
-            },
-        }
-    }
-
-    PerformHttpRequest(webhookUrl, nil, 'POST', json.encode({embeds = EmbedData}), {['Content-Type'] = 'application/json'})
+    return FN_LOG.Discord(webhookUrl, {
+        title = FN_LOG.Cut((tonumber(_source) and ('Player: ['.._source..'] '..playerName..'\nSteam: '..steamID..'\nLicense: '..licenseID..'\nDiscord: '..discordID) or tostring(playerIdOrTitle)), 256),
+        description = FN_LOG.Cut(content, 4000),
+        color = 255,
+        footer = { text = os.date("%Y/%m/%d %X")..' - https://fivenuts.dev/ - '..tostring(scriptName) },
+    })
 end
 
 FN_HELPER.NormalizeGroups = function(groups)
@@ -122,11 +111,100 @@ FN_HELPER.RegisterCommand = function(command, groups, callback, allowConsole, su
     end
 end
 
-FN_HELPER.BanPlayer = function(playerId, reason)
-    local webhook = FN_BRIDGE.Setting('banWebhook')
-    if type(webhook) ~= 'string' or webhook == '' then return print('BanPlayer called for '..tostring(playerId)..' ('..tostring(reason)..') but Config.Bridge.banWebhook is empty in '..tostring(GetInvokingResource())..', nothing was logged.') end
+local BanText = {
+    ar = 'تم حظرك من هذا الخادم.',
+    cs = 'Na tomto serveru jsi zabanován.',
+    de = 'Du wurdest von diesem Server gebannt.',
+    en = 'You have been banned from this server.',
+    es = 'Has sido baneado de este servidor.',
+    fr = 'Tu as été banni de ce serveur.',
+    it = 'Sei stato bannato da questo server.',
+    nl = 'Je bent verbannen van deze server.',
+    pl = 'Zostałeś zbanowany na tym serwerze.',
+    ['pt-br'] = 'Você foi banido deste servidor.',
+    ro = 'Ai primit ban pe acest server.',
+    tr = 'Bu sunucudan yasaklandın.',
+}
 
-    FN_HELPER.SendLog(webhook, playerId, 'Player has been banned for: '..reason)
+FN_HELPER.BanRoute = function()
+    local value = GetConvar('fn_bridge:ban', 'auto')
+    if value == '' or value == 'auto' then return GetResourceState('APIAC') == 'started' and 'APIAC:banPlayer' or 'drop' end
+    if value:match('^[%w_%-]+:[%w_]+$') then return value end
+
+    return 'drop'
+end
+
+local function BanByExport(route, playerId, reason, details, duration)
+    local resource, name = route:match('^(.-):(.+)$')
+    if GetResourceState(resource) ~= 'started' then return false, resource..' is not started' end
+
+    return pcall(function()
+        local target = exports[resource]
+        if route == 'APIAC:banPlayer' then return target[name](target, playerId, reason, details, duration) end
+
+        return target[name](target, playerId, reason, details)
+    end)
+end
+
+local function Evidence(playerId)
+    local evidence = {}
+    for key, value in pairs(FN_HELPER.GetIdentifiers(playerId)) do
+        if key ~= 'ip' and key ~= 'license' then evidence[key] = value end
+    end
+
+    return evidence
+end
+
+FN_HELPER.BanPlayer = function(playerId, reason, details, duration)
+    local resource = GetInvokingResource() or GetCurrentResourceName()
+    playerId = tonumber(playerId)
+    if not playerId or playerId <= 0 then return false end
+
+    reason = type(reason) == 'string' and reason ~= '' and reason or 'banned by '..resource
+    if details ~= nil and type(details) ~= 'table' then details = { info = tostring(details) } end
+    details = details or {}
+    local encodedOk, encoded = pcall(json.encode, details)
+    encoded = encodedOk and encoded or tostring(details)
+
+    if not GetPlayerName(playerId) then
+        print(('^3BanPlayer from %s: player %s is no longer on the server, the ban is only logged^7'):format(resource, playerId))
+        FN_LOG.Write(resource, 'anticheat', 'player.ban', playerId, { reason = reason, details = encoded, route = 'offline', duration = tonumber(duration) }, FN_LOG.Gone(playerId) or { serverId = playerId })
+
+        return false
+    end
+
+    local identity, evidence = FN_LOG.Identity(playerId), Evidence(playerId)
+    local route, result = 'drop', nil
+
+    local hook = FN_BRIDGE.Setting('ban', resource)
+    if FN_BRIDGE.Callable(hook) then
+        local ok, done = pcall(hook, playerId, reason, details, duration)
+        if not ok then print('^1ban hook failed, using the next ban route: '..tostring(done)..'^7') end
+        if ok and done ~= nil and done ~= false then route, result = 'hook', done end
+    end
+
+    if route ~= 'hook' then
+        local configured = FN_HELPER.BanRoute()
+        if configured ~= 'drop' then
+            local ok, done = BanByExport(configured, playerId, reason, details, duration)
+            if ok and done ~= false then route, result = configured, done else print('^1ban export '..configured..' failed, the player is only dropped: '..tostring(done)..'^7') end
+        end
+    end
+
+    if route == 'drop' then
+        local lang = FN_HELPER.GetLanguage()
+        DropPlayer(tostring(playerId), BanText[lang] or BanText[lang:sub(1, 2)] or BanText.en)
+        print(('^3Player %s was dropped by BanPlayer from %s (%s). Set fn_bridge:ban to a ban resource for a real ban.^7'):format(playerId, resource, reason))
+    end
+
+    evidence.reason = reason
+    evidence.details = encoded
+    evidence.route = route
+    evidence.result = result ~= nil and tostring(result) or nil
+    evidence.duration = tonumber(duration)
+    FN_LOG.Write(resource, 'anticheat', 'player.ban', playerId, evidence, identity)
+
+    return route
 end
 
 FN_HELPER.GetNetIdFromEntity = function(entity, timeout)
@@ -169,7 +247,7 @@ RegisterNetEvent('fn_bridge/server/banPlayer', function(reason)
     if not playerId or playerId == 0 or Reported[playerId] then return end
 
     Reported[playerId] = true
-    FN_HELPER.BanPlayer(playerId, 'spoofed a net event guarded by fn_bridge ('..tostring(reason):sub(1, 64)..')')
+    FN_HELPER.BanPlayer(playerId, 'spoofed a net event guarded by fn_bridge ('..FN_LOG.Cut(reason, 64)..')')
 end)
 
 AddEventHandler('playerDropped', function() Reported[source] = nil end)

@@ -133,13 +133,12 @@ local function Names(xPlayer)
     local last = Text(Call(xPlayer, 'get', 'lastName')) or Text(xPlayer.lastName)
     if first or last then return first or '', last or '' end
 
-    local full = tonumber(xPlayer.source) and Text(Player(xPlayer.source).state.identityName)
-    if not full and type(xPlayer.identifier) == 'string' and FN_DB.HasColumn('users', 'firstname') then
+    if type(xPlayer.identifier) == 'string' and FN_DB.HasColumn('users', 'firstname') then
         local row = MySQL.single.await('SELECT firstname, lastname FROM users WHERE identifier = ?', { xPlayer.identifier })
         if row and (Text(row.firstname) or Text(row.lastname)) then return row.firstname or '', row.lastname or '' end
     end
 
-    full = full or Text(Call(xPlayer, 'getName')) or ''
+    local full = Text(Call(xPlayer, 'getName')) or ''
     first, last = full:match('^(%S*)%s*(.-)$')
 
     return first, last

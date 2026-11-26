@@ -340,6 +340,36 @@ local function Adapters()
     if #failed > 0 then print(('^3ADAPTER errors since start, a safe value was returned: %s^7'):format(table.concat(failed, ', '))) end
 end
 
+local function Logging()
+    local hook = FN_BRIDGE.Callable(FN_BRIDGE.Setting('ban', GetCurrentResourceName()))
+    local route = FN_HELPER.BanRoute()
+    local fallback = route == 'drop' and 'kick only, no ban resource found' or route
+    print(('^5BAN^7 route: %s'):format(hook and ('ban hook, falls back to ' .. fallback) or fallback))
+
+    local channels = {}
+    for _, channel in ipairs({ 'economy', 'jobs', 'casino', 'admin', 'anticheat' }) do
+        local state = FN_LOG.Webhook(channel) and 'on' or GetConvar('fn_bridge:webhook_' .. channel, '') ~= '' and 'not an http(s) URL' or 'off'
+        channels[#channels + 1] = ('%s %s'):format(channel, state)
+    end
+    print(('^5LOG^7 webhooks: %s'):format(table.concat(channels, ', ')))
+
+    Check('log rejects bad input', function()
+        local saved = _G.print
+        _G.print = function() end
+        local ok, result = pcall(FN_LOG.Send, 'fnb_nope', 'bad event', nil, nil)
+        _G.print = saved
+
+        return ok and result == false, tostring(result)
+    end)
+    Check('fn_logs table', function()
+        if not FN_LOG.DbEnabled() then return 'skip', 'fn_bridge:logs_db is off' end
+        if not FN_LOG.TableExists() then return false, 'missing, import sql/install.sql from fn_bridge into your database' end
+        if not FN_DB.HasColumn('fn_logs', 'server_id') then return false, 'old layout, drop fn_logs and import sql/install.sql again' end
+
+        return true
+    end)
+end
+
 local function TierA()
     local framework = FN_BRIDGE.frameworkName
     local FRAMEWORK, VEHICLES = FN_BRIDGE.FRAMEWORK, FN_BRIDGE.VEHICLES
@@ -833,6 +863,7 @@ RegisterCommand('fnb_selftest', function(source, args)
 
     CreateThread(function()
         Adapters()
+        Logging()
         if playerId then TierB(playerId) else TierA() end
         print(('fnb_selftest %s: %d passed, %d failed, %d skipped'):format(FN_BRIDGE.frameworkName, Tally.pass, Tally.fail, Tally.skip))
     end)

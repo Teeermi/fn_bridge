@@ -14,6 +14,8 @@ Older ESX versions won't work.
 
 Download the newest release from https://github.com/Teeermi/fn_bridge/releases/latest and put the `fn_bridge` folder in your resources. Don't rename it, our scripts look for it by name.
 
+Import `sql/install.sql` from the `fn_bridge` folder into your server's database (HeidiSQL, phpMyAdmin or `mysql < sql/install.sql`). It creates the `fn_logs` table for logs. Running it twice is safe.
+
 fn_bridge has no config file. To update, replace the whole folder: nothing you set lives in it.
 
 ## 3. Start order
@@ -119,6 +121,49 @@ Use `set`, never `setr`: `setr` sends the value to every player. A token in a sc
 
 **If you run more than one** supported resource of the same kind, the first one in the [supported list](readme.md) wins. For frameworks, QBox is checked before QBCore, since QBox servers often keep a qb-core compatibility resource around.
 
+### Logs and bans
+
+Scripts send their logs through fn_bridge to five channels: `economy`, `jobs`, `casino`, `admin` and `anticheat`. Give each channel its own Discord webhook in `server.cfg`:
+
+```cfg
+set fn_bridge:webhook_economy "https://discord.com/api/webhooks/..."
+set fn_bridge:webhook_jobs ""
+set fn_bridge:webhook_casino ""
+set fn_bridge:webhook_admin ""
+set fn_bridge:webhook_anticheat "https://discord.com/api/webhooks/..."
+```
+
+Use `set` for these, never `setr` or `sets`. `setr` sends the URL to every player and `sets` shows it in the server list, and anyone who has the URL can post in your channel. A channel with an empty or missing convar sends nothing to Discord. Webhooks in a script's own `config/server.lua` keep working as before.
+
+Every log also becomes a row in the `fn_logs` table. Import `sql/install.sql` from fn_bridge into your database once; fn_bridge never creates tables while the server runs. Until the table exists, fn_bridge prints one warning, keeps the rows in memory and checks again with longer and longer pauses, so importing the file later is enough. `set fn_bridge:logs_db "false"` stops the database writes. A webhook value that isn't an `http://` or `https://` URL turns that channel's Discord messages off with one warning. Discord messages go out in the background, about one a second per webhook, and fn_bridge waits as long as Discord asks when it hits a rate limit. Database rows are written every 5 seconds in batches of up to 100. If the database connection drops, the rows wait in memory and fn_bridge tries again. oxmysql doesn't always report a refused connection, so a query with no answer after 15 seconds is treated the same way. A batch the database refuses twice for any other reason is dropped with one warning. Game code never waits on either.
+
+`FN_BRIDGE.HELPER.BanPlayer` picks who bans the player in this order: `ban` hook > `fn_bridge:ban` > APIAC > kick.
+
+1. The `ban` hook, if you set one in `fn_bridge_custom`. This is the way to use any anticheat, see below.
+2. `fn_bridge:ban` set to `resource:export`. fn_bridge calls that export with `playerId, reason, details`, so it only fits an anticheat whose export takes the player id first and the reason second. For any other argument order, use the hook.
+3. APIAC, found on its own when it is started (the default `auto`). Set `fn_bridge:ban` to `drop` to skip it.
+4. With none of these, the player is kicked with a short message in the server's language. A kick is not a ban, so they can join again.
+
+```cfg
+set fn_bridge:ban "my_bans:BanPlayer"
+```
+
+Every ban also goes to the `anticheat` channel, whichever way it was handled. The entry holds the reason, the details, the player's identifiers and position, and the script that asked for the ban. A ban for a player who already left is still logged, with route `offline` and the identity fn_bridge saw when they dropped. `fnb_selftest` prints the active ban route (the hook too), which channels have a webhook and whether `fn_logs` exists, with the fix when it doesn't.
+
+### Using your own anticheat
+
+fn_bridge finds only APIAC by itself. For any other anticheat, provide the `ban` hook in `fn_bridge_custom` and call your anticheat's ban export there, with the arguments in the order it expects:
+
+```lua
+-- server.lua
+exports.fn_bridge:Provide('ban', function(playerId, reason, details, duration)
+    exports['my_anticheat']:BanPlayer(playerId, reason, json.encode(details), duration or 0)
+    return true
+end)
+```
+
+Return anything but `nil` or `false` once the player is banned. Returning `nil` or `false`, or an error inside the hook, hands the ban on to the next route. A `fn_bridge:ban` export that returns `false` or errors gets the player kicked.
+
 ### Per script: `Config.Bridge`
 
 Everything else is set per script, in that script's own config, as `Config.Bridge`. Two scripts can differ, and a script update keeps your values like any other setting of that script.
@@ -135,7 +180,6 @@ Config.Bridge = {
         ox = { item = 'black_money' },
         vrp = { item = 'dinheirosujo' },
     },
-    banWebhook = '',
 }
 ```
 
@@ -144,7 +188,6 @@ Config.Bridge = {
 | `language` | `ox:locale`, else `en` | Language of the script's `locales/*.json` |
 | `garage` | stock garages | Which column means parked (`parkedColumn`, its value when parked, `parkedOut` for its value when out), the garage column, the column that marks an impounded car (`impoundColumn`, `impounded` when the table has it), and extra columns to fill when the script adds a car |
 | `dirtyMoney` | `markedbills`, `black_money`, `dinheirosujo` | The item used as black money where the framework has no black money account |
-| `banWebhook` | empty | Discord webhook for the script's ban logs |
 | `admins` | `fn_bridge:admins` | Staff groups for this script only, as a list: `{ 'owner', 'cardev' }` |
 | `notify`, `showHelp`, `hideHelp`, `chat`, `revive`, ... | not set | Your own functions for this script only, see `fn_bridge_custom` below |
 
@@ -226,6 +269,7 @@ end)
 | `spawns` | server | `playerId, identifier, isNew`, returns a list of points and `exclusive` | Extra spawn points on the character select, for a motel script for example |
 | `voice` | both | server `{ call, radio, getRadio, radioCount, mute, mumble }`, client `{ radioEnabled, radioTalk, ghost }` | Phone calls and the radio in your voice script. `ghost(on)` lets players who are out of a minigame talk only to each other |
 | `radio` | server | `fn(playerId, channel)` returning `true`, `false` or `nil` | Your radio item script joins and leaves channels for fn_bridge, so the phone Radio app shows up in its HUD and follows its access rules. `nil` hands the change to the voice script |
+| `ban` | server | `fn(playerId, reason, details, duration)`, returns anything but `nil` or `false` once it has banned the player | Your ban script. `nil` or `false` hands the ban on to `fn_bridge:ban` |
 | `weather` | server | a function returning the weather name, or `{ weather, time }` | Your weather script. Return a GTA weather name (`RAIN`, `THUNDER`) or `clear`, `rain`, `storm`, `snow`, `fog`; `time` returns the hour 0 to 23 |
 | `phoneNumber` | server | `{ get, taken, set, check, relog }` | Changing a character's phone number in a phone that keeps its own numbers |
 | `fuel` | client | `vehicle`, returns 0 to 100 | Fuel level |
@@ -253,6 +297,7 @@ An inventory fn_bridge has no adapter for goes in the same way, with full names:
 | Banner says `framework standalone` on a server with a framework | Move `ensure fn_bridge` below your framework |
 | `xPlayer.<method> failed on this ESX build` | Your ESX is modified. Run `fnb_doctor` and send us its output |
 | `the ... adapter never finished loading` | Your framework didn't respond in 30 seconds. Check its own errors first |
+| `LOG table fn_logs is missing` | Import `sql/install.sql` into your database. fn_bridge picks the table up on its own, no restart needed |
 | `gave up waiting for the bridge` | That script started before fn_bridge. Move `ensure fn_bridge` above it |
 | `setr fn_bridge:notify is "x" which nothing here implements` | Typo in `server.cfg`. The message lists valid values |
 | `setr fn_bridge:inventory is "x", which fn_bridge does not know` | Typo in `server.cfg`. Same for `framework`, `target` and `society`. fn_bridge detects it on its own until you fix the line, and the message lists valid values |

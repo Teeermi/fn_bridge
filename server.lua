@@ -111,6 +111,7 @@ Finish = function()
     FN_BRIDGE.NOTIFY = FN_NOTIFY
     FN_BRIDGE.TARGET = FN_BRIDGE.UnavailableNamespace('TARGET', 'client side only', FN_BRIDGE.TargetContract)
     FN_BRIDGE.HELPER = FN_HELPER
+    FN_BRIDGE.LOG = FN_LOG
     FN_BRIDGE.PICKER = FN_BRIDGE.UnavailableNamespace('PICKER', 'client side only', FN_BRIDGE.PickerContract)
     FN_BRIDGE.PROGRESS = FN_BRIDGE.UnavailableNamespace('PROGRESS', 'client side only', { 'Name', 'Bar', 'Cancel', 'IsActive' })
     FN_BRIDGE.KEYS = FN_KEYS

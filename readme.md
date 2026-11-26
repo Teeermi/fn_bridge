@@ -90,6 +90,23 @@ setr fn_bridge:notify "ox"
 | `fn_bridge:debug` | `false` | `true` prints every detection step and draws target zones |
 | `fn_bridge:tunnel` | `off` | `on` when the web pages of fivenuts scripts go through a Cloudflare Tunnel; direct requests to the game port then get 403 ([PROTECTION.md](docs/ENGLISH/PROTECTION.md)) |
 
+### Logs, webhooks and bans
+
+These stay on the server, so use `set`, never `setr` or `sets`. Either of those would hand the webhook URL to players.
+
+```cfg
+set fn_bridge:webhook_economy "https://discord.com/api/webhooks/..."
+set fn_bridge:webhook_anticheat "https://discord.com/api/webhooks/..."
+```
+
+| Convar | Default | What it sets |
+| --- | --- | --- |
+| `fn_bridge:webhook_economy`, `_jobs`, `_casino`, `_admin`, `_anticheat` | empty | Discord webhook for that log channel, empty turns the channel off. A value that isn't an http(s) URL is ignored with one warning |
+| `fn_bridge:logs_db` | `true` | `false` stops writing logs to the `fn_logs` table. Import `sql/install.sql` first |
+| `fn_bridge:ban` | `auto` | who bans for `BanPlayer`: `auto` uses APIAC when it runs, `resource:export` calls an export that takes `playerId, reason, details`, `drop` only kicks. Any other anticheat goes through the `ban` hook |
+
+Details in [_INSTALL.md](docs/ENGLISH/_INSTALL.md#logs-and-bans).
+
 ### `fn_bridge_custom`
 
 Your own resources (notify, ambulance, dispatch, housing, renamed garage columns) plug in once for every FIVENUTS script.
@@ -123,7 +140,6 @@ Config.Bridge = {
         ox = { item = 'black_money' },
         vrp = { item = 'dinheirosujo' },
     },
-    banWebhook = '',
     notify = function(message, messageType, time) exports['my_notify']:Send(message, messageType, time) end,
     showHelp = function(message, position, options) exports['my_textui']:Show(message) end,
     hideHelp = function() exports['my_textui']:Hide() end,
@@ -135,7 +151,6 @@ Config.Bridge = {
 | `language` | `ox:locale`, else `en` | language of the script's texts that go through fn_bridge |
 | `garage` | stock garages | parked column and value (`parkedOut` = value when out), garage column, extra columns filled on insert; `qb` covers QBox |
 | `dirtyMoney` | see above | black money item where the framework has no black money account |
-| `banWebhook` | empty | Discord webhook for the script's ban logs |
 | `notify`, `showHelp`, `hideHelp` | not set | your own notify and text UI; client side, so the config must load on the client |
 | `chat` | not set | `chat(playerId, author, message, color)` on the server, for a chat without `chat:addMessage` |
 

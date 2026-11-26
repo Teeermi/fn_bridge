@@ -10,6 +10,12 @@ local charIdSource
 
 FN_CHARID = {}
 
+local Ids = {}
+
+FN_CHARID.Get = function(playerId)
+    return Ids[tonumber(playerId)]
+end
+
 local function Reject(setting, reason)
     print(('^3setr fn_bridge:charid is^7 %s ^3but %s^7 - character ids fall back to the identifier.'):format(setting, reason))
 
@@ -67,8 +73,14 @@ local function PublishCharId(playerId)
     local player = FN_FRAMEWORK.GetPlayerFromId(playerId)
     if not player or not player.identifier then return end
 
-    Player(playerId).state:set('fn_charId', FN_FRAMEWORK.GetCharId(player.identifier), true)
+    local charId = FN_FRAMEWORK.GetCharId(player.identifier)
+    Ids[tonumber(playerId)] = charId
+    Player(playerId).state:set('fn_charId', charId, true)
 end
+
+AddEventHandler('playerJoining', function()
+    Ids[tonumber(source)] = nil
+end)
 
 AddEventHandler('fn_bridge/server/playerLoaded', PublishCharId)
 

@@ -479,9 +479,15 @@ local function oxDossier(key)
     return d
 end
 
+local function OxUser(src)
+    local ok, player = pcall(function() return exports.ox_core:GetPlayer(src) end)
+
+    return ok and player and player.userId
+end
+
 IMPL.ox = {
     list = function(src, owner)
-        local uid = owner or Player(src).state.userId
+        local uid = owner or OxUser(src)
         if not uid then return {} end
         local out = {}
         local q = column('characters', 'isDead') and OX_LIST:gsub('c%.heading,', 'c.heading, c.isDead,', 1) or OX_LIST
@@ -512,7 +518,7 @@ IMPL.ox = {
         return exports.ox_core:CallPlayer(src, 'setActiveCharacter', tonumber(key)) ~= nil
     end,
     create = function(src, _, d)
-        local uid = Player(src).state.userId
+        local uid = OxUser(src)
         local y, m, day = d.dob:match('^(%d+)-(%d+)-(%d+)$')
         local date = os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(day), hour = 12 }) * 1000
         if not uid or exports.ox_core:CallPlayer(src, 'createCharacter', {

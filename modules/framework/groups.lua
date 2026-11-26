@@ -313,7 +313,7 @@ if Esx then
         if not EsxHidden() then return false end
 
         local xPlayer = F.RawPlayer(playerId)
-        local h = type(xPlayer) == 'table' and xPlayer.hiddenjob or tonumber(playerId) and Player(tonumber(playerId)).state.hiddenjob
+        local h = type(xPlayer) == 'table' and xPlayer.hiddenjob
         if type(h) ~= 'table' then return false end
 
         return GangView(h.name, h.grade, h.label, h.grade_name, h.grade_label, h.grade_name == 'boss')

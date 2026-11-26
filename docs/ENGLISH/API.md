@@ -278,11 +278,12 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `GetLanguage` | none | language code |
 | `NumWithCommas` | `num` | `'1,250'` |
 | `SafeCall` | `func`, `...` | the result, or `nil` if it errored |
-| `SendLog` | `webhookUrl`, `playerIdOrTitle`, `content`, `scriptName` | nothing |
+| `SendLog` | `webhookUrl`, `playerIdOrTitle`, `content`, `scriptName` | `true` once queued, `false` for a bad URL |
 | `SetPlayerBucket` | `playerId`, `bucket` | nothing |
 | `GetIdentifiers` | `playerId` | map of identifier type to value |
 | `GetPlayer` | `playerId` | `{ id, name, identifiers }`, or `nil` |
-| `BanPlayer` | `playerId`, `reason` | nothing |
+| `BanPlayer` | `playerId`, `reason`, `details`, `duration` | the route that handled it (`'hook'`, `'APIAC:banPlayer'`, your `'resource:export'` or `'drop'`), or `false` when the player isn't online. An offline ban is still logged with route `offline` |
+| `BanRoute` | none | the route `fn_bridge:ban` points to right now |
 | `IsAdmin` | `playerId` | `true` for the console, players in `fn_bridge:admins` (or `Config.Bridge.admins` of the calling script) and players with the `fn_bridge.admin` ACE |
 | `RegisterCommand` | `command`, `groups`, `callback`, `allowConsole`, `suggestions`, `deniedMessage` | nothing |
 | `GetNetIdFromEntity` | `entity`, `timeout` | net id, or `false` |
@@ -338,7 +339,32 @@ end, false, { help = 'Give a crate to a player', params = { { name = 'id', help 
 
 **GetNetIdFromEntity / GetEntityFromNetId** retry until the entity is networked (`timeout` in ms, default `1000`). They wait, so call them inside a thread. On the client, `GetNetIdFromEntity` will network a local entity.
 
-**BanPlayer** logs to `Config.Bridge.banWebhook` of the calling script, and warns in the console if it's empty.
+**BanPlayer** tries the `ban` hook, then `fn_bridge:ban` (a `resource:export` of yours, or APIAC when it runs), and kicks the player when nothing else can ban. Use the hook for an anticheat whose export takes other arguments. `details` is a table of evidence and `duration` is passed on to APIAC and to the hook. A hook or export that returns `false` counts as failed: the hook hands the ban on, the export ends in a kick. Each ban is logged to the `anticheat` channel with the reason, details, identifiers, position and your resource name. A player who already left is logged too, with route `offline` and the identity from when they dropped. See [_INSTALL.md](_INSTALL.md#logs-and-bans).
+
+**SendLog** still takes a webhook URL of your own. It now uses the same queue as `FN_BRIDGE.LOG`, so it never blocks and it waits when Discord rate limits.
+
+## FN_BRIDGE.LOG
+
+**Server**
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Send` | `channel`, `event`, `playerId`, `data` | `true`, or `false` when the input is wrong |
+
+Resources that don't import fn_bridge use the export, which takes the same arguments: `exports.fn_bridge:Log(channel, event, playerId, data)`.
+
+- `channel` is `economy`, `jobs`, `casino`, `admin` or `anticheat`.
+- `event` is a short name like `shop.buy`, up to 64 letters, digits, `_`, `-` and `.`.
+- `playerId` is a server id, or `nil` when no player is involved. fn_bridge adds the license, the character id, the character name and the name of your resource.
+- `data` is a flat table with up to 20 keys of up to 32 characters each. Values can be strings (cut at 256 bytes, never inside a UTF-8 character), numbers or booleans.
+
+Wrong input never throws. fn_bridge drops it and prints one warning per resource and problem. Each log becomes a Discord embed with a field per key, sent to that channel's webhook, and a row in `fn_logs`. Webhooks and the database switch are set in [_INSTALL.md](_INSTALL.md#logs-and-bans).
+
+```lua
+FN_BRIDGE.LOG.Send('economy', 'shop.buy', playerId, { item = 'bread', count = 2, price = 24 })
+```
+
+`fn_logs` has `id`, `created_at` (`DATETIME(3)`), `resource`, `channel`, `event`, `server_id`, `char_id`, `char_name`, `license`, `x`, `y`, `z` and `data` (JSON), with indexes on `event, created_at` and `char_id, created_at`. The player columns are `NULL` when a log has no player. Create the table with `sql/install.sql`; fn_bridge doesn't create it.
 
 ## FN_BRIDGE.NOTIFY
 

@@ -1,5 +1,23 @@
 # fn_bridge changelog
 
+## 1.6.9 (2026-11-26)
+
+Before you update
+- Config.Bridge.banWebhook is gone. Put the URL in server.cfg as set fn_bridge:webhook_anticheat "..." and use set, not setr or sets, so players never see it.
+
+Added
+- LOG.Send(channel, event, playerId, data) and the Log export write structured logs to the economy, jobs, casino, admin and anticheat channels. fn_bridge adds the server id, license, character id, character name, position and calling resource, and drops wrong input with a single console warning. Long text is cut at a character boundary, so Polish letters and emoji never break in Discord or the database. SendLog cuts its title and description the same way.
+- Each channel has its own server-only webhook convar, fn_bridge:webhook_<channel>. A value that isn't an http(s) URL is ignored with one warning. Discord messages queue per webhook, wait out 429 rate limits and drop the oldest entry with a warning when the queue fills up. Game code never waits on them.
+- Logs are also stored in a new fn_logs table. Import sql/install.sql once, fn_bridge never creates it on its own. While the table is missing, fn_bridge warns once, keeps the rows and checks again with growing pauses. Rows go in batches of up to 100 every 5 seconds, plus a final write of everything buffered when fn_bridge stops. When the database connection drops, rows wait in memory and fn_bridge retries. A query oxmysql never answers counts as a dropped connection after 15 seconds. A batch the database refuses twice for another reason is dropped with one warning. Set fn_bridge:logs_db to false to turn this off.
+- New ban hook and fn_bridge:ban convar. BanPlayer tries the hook first, then the resource:export you name, then APIAC when it is started, and kicks the player when there is no ban resource. The hook works with any anticheat, since you call its export with the arguments it expects. A hook that returns false hands the ban on, an export that returns false ends in a kick. Every ban is logged to the anticheat channel with the reason, details, identifiers, position and the script that asked for it, also when the player already left (route offline).
+- fnb_selftest prints the ban route, which log channels have a webhook and whether fn_logs exists, and tells you to import sql/install.sql when it doesn't.
+
+Changed
+- SendLog sends through the same Discord queue, so existing calls keep working and now respect rate limits.
+
+Fixed
+- Server code no longer reads the character id, ESX character name, hidden job or ox_core user id from player state bags. A client can overwrite its own state bag, so logs, bans and character lists now use values fn_bridge keeps on the server.
+
 ## 1.6.8 (2026-11-22)
 
 Added
