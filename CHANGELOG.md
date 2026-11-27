@@ -1,5 +1,23 @@
 # fn_bridge changelog
 
+## 1.7.0 (2026-11-27)
+
+Added
+- FRAMEWORK.GetNeeds() on the client returns hunger, thirst and stress from 0 to 100 on QBCore, Qbox, ESX with esx_status and ox_core, and {} on vRP and standalone. ox_core statuses are turned around, so 100 hunger means fed everywhere.
+- fn_bridge/client/onNeedsChange fires with the new needs only when a value really changes.
+- FRAMEWORK.GetGang() on the client returns the same table as on the server, or false. ESX reads the hiddenjob, ox_core, vRP and standalone return false.
+- needs and gang hooks on the client, so a server with its own needs or gang script can answer both. The client gang hook gets the player's own server id, so one function(playerId) works on both sides.
+- fn_bridge/client/refreshNeeds. A needs script fn_bridge doesn't know fires it after a change, and onNeedsChange sends the new values from the needs hook.
+- fn_bridge/client/onVoiceChange fires with VOICE.Get() when the talk range changes on pma-voice or SaltyChat.
+- HELPER.GetFuel(vehicle) on the server reads the fuel hook or the fuel state bag.
+- FRAMEWORK.GetItemList() on the server returns the QBCore item list, and {} on other frameworks.
+
+Fixed
+- onNeedsChange now follows the needs hook. Framework events no longer send their own values over it.
+- A partial hud:client:UpdateStress on QBCore and Qbox no longer leaves hunger and thirst empty, they come from the player metadata.
+- ox_core GetNeeds on the server now counts 100 hunger and thirst as fed, like the client and every other framework, and AddNeeds adds food and drink instead of taking it.
+- ESX GetGang on the client returns false without a users.hiddenjob column, the same as the server.
+
 ## 1.6.9 (2026-11-26)
 
 Before you update

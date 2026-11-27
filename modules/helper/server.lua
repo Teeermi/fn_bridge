@@ -252,6 +252,20 @@ end)
 
 AddEventHandler('playerDropped', function() Reported[source] = nil end)
 
+FN_HELPER.GetFuel = function(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return nil end
+
+    local hook = FN_BRIDGE.Setting('fuel')
+    if FN_BRIDGE.Callable(hook) then
+        local ok, level = pcall(hook, vehicle)
+        if ok and tonumber(level) then return tonumber(level) end
+    end
+
+    local bag = Entity(vehicle).state.fuel
+
+    return type(bag) == 'number' and bag or nil
+end
+
 FN_HELPER.GetIdentifiers = function(playerId)
     local identifiers = {}
     for _, v in ipairs(GetPlayerIdentifiers(playerId)) do

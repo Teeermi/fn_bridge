@@ -114,7 +114,8 @@ Returned by `GetPlayerFromId` and `GetPlayerFromIdentifier`. Every field is alwa
 | `SetJob` | `playerId` or `identifier`, `jobName`, `grade` | boolean, online or offline, checks the job exists. An online player's identifier changes the live player. vRP keeps groups in memory, so an offline user there returns `false` | maybe |
 | `RemoveJob` | `playerId` or `identifier`, `jobName` | boolean (fires from that job) | maybe |
 | `GetGang` | `playerId` | `{ name, label, grade, grade_name, grade_label, isBoss }`, or `false` | no |
-| `GetNeeds` | `playerId` | `{ hunger, thirst, stress }`, each 0-100 or missing | no |
+| `GetNeeds` | `playerId` | `{ hunger, thirst, stress }`, each 0-100 or missing. 100 hunger and thirst means fed on every framework, ox_core included | no |
+| `GetItemList` | none | the framework's own item list by name (QBCore `Shared.Items`), `{}` elsewhere | no |
 | `GetPlayTime` | `playerId` | seconds, or `false` | no |
 | `GetPhoneNumber` | `playerId` | number as text, or `false` | maybe |
 | `SetPhoneNumber` | `playerId`, `number` | boolean | yes |
@@ -260,11 +261,15 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `GetCharId` | none | character id published by the server, or the identifier | ✅ | ✅ | ✅ |
 | `GetName` | none | full name, or `nil` before load | ✅ | ✅ | ✅ |
 | `GetJob` | none | `{ name, label, grade, grade_label }` | ✅ | ✅ | ✅ |
+| `GetGang` | none | `{ name, label, grade, grade_name, grade_label, isBoss }`, or `false`. ESX reads `hiddenjob`, ox_core, vRP and standalone return `false` unless the `gang` hook answers | ✅ | ✅ | ✅ |
+| `GetNeeds` | none | `{ hunger, thirst, stress }`, each 0-100 or missing. 100 hunger and thirst means fed. ox_core statuses are turned around to match, vRP and standalone return `{}` unless the `needs` hook answers | ✅ | ✅ | ✅ |
 | `GetAccounts` | none | `{ cash, bank, black_money }` | ✅ | ✅ | ✅ |
 | `GetMoney` | `accountName` | number | ✅ | ✅ | ✅ |
 | `Notify` | `message`, `messageType`, `time` | nothing | ✅ | ✅ | ✅ |
 | `ShowHelpText` | `message`, `position`, `options` | nothing | ✅ | ✅ | ✅ |
 | `HideHelpText` | none | nothing | ✅ | ✅ | ✅ |
+
+`fn_bridge/client/onNeedsChange` fires with the `GetNeeds` table when a value really changes, from QBCore and Qbox metadata and `hud:client:UpdateNeeds` / `hud:client:UpdateStress`, `esx_status:onTick` on ESX and `ox:statusTick` on ox_core. The table always comes from `GetNeeds`, so a `needs` hook in `fn_bridge_custom` decides what it holds and framework events can't override it. A needs script fn_bridge doesn't know runs `TriggerEvent('fn_bridge/client/refreshNeeds')` after its values change, and fn_bridge reads `GetNeeds` again. There is no event for a gang change, read `GetGang` when you need it. The `gang` hook gets your own server id on the client, the same argument as on the server.
 
 `Notify` and the help text functions here always use the framework's own UI. Use `FN_BRIDGE.NOTIFY` instead, it follows the server owner's choice. `GetPlayerData` differs per framework, so prefer the named getters.
 
@@ -288,6 +293,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `RegisterCommand` | `command`, `groups`, `callback`, `allowConsole`, `suggestions`, `deniedMessage` | nothing |
 | `GetNetIdFromEntity` | `entity`, `timeout` | net id, or `false` |
 | `GetEntityFromNetId` | `netId`, `timeout` | entity, or `false` |
+| `GetFuel` | `vehicle` | fuel level (0 to 100) from the `fuel` hook or the vehicle's `fuel` state bag, or `nil` when neither knows it |
 
 **Client**
 
@@ -719,7 +725,7 @@ A radio script that keeps its own state (its own HUD, member list or access rule
 
 Another voice script plugs in with the `voice` hook: `{ call = fn(playerId, callId), radio = fn(playerId, channel), getRadio = fn(playerId), radioCount = fn(channel), mute = fn(playerId, on), mumble = true }` on the server (`call` and `radio` are the ones that matter, `mute` returns `true` when it muted), and `{ radioEnabled = fn(on), radioTalk = fn(on) }` on the client.
 
-`Get`, `SetRange` and `SetVolume` work with pma-voice and SaltyChat. `custom` is set while a script overrides the range, `SetRange` then returns `false`. `cycle` is `false` when the server turned range cycling off (`voice_enableProximityCycle 0`). SaltyChat modes come from its `config.json` `VoiceRanges` and have no `name`, it has no call volume (`call` is `nil`), and its radio volume above 100% reads as 100.
+`Get`, `SetRange` and `SetVolume` work with pma-voice and SaltyChat. `custom` is set while a script overrides the range, `SetRange` then returns `false`. `cycle` is `false` when the server turned range cycling off (`voice_enableProximityCycle 0`). SaltyChat modes come from its `config.json` `VoiceRanges` and have no `name`, it has no call volume (`call` is `nil`), and its radio volume above 100% reads as 100. The local client event `fn_bridge/client/onVoiceChange` fires with the new `Get` table when the talk range changes, so a HUD doesn't have to ask every frame.
 
 ## FN_BRIDGE.WEATHER (server)
 
@@ -1074,6 +1080,9 @@ All namespaces exist on both sides. One with nothing behind it (like `TARGET` on
 | `fn_bridge/client/onVehicleLeave` | client | `vehicle`, `wasDriver` |
 | `fn_bridge:characterSelect` | client | none, the framework sent the player back to character select (QBCore `/logout`, Qbox, ox_core, ESX) |
 | `fn_bridge:radioTalking` | client | `serverId` (`nil` for you), `talking` |
+| `fn_bridge/client/onNeedsChange` | client | `{ hunger, thirst, stress }`, only when a value changed |
+| `fn_bridge/client/refreshNeeds` | client | none. Fire it yourself and fn_bridge reads `GetNeeds` again |
+| `fn_bridge/client/onVoiceChange` | client | the `VOICE.Get()` table, when the talk range changes (pma-voice, SaltyChat) |
 | `fn_bridge/server/playerLoaded` | server | `playerId`, player object |
 | `fn_bridge/server/onJobChange` | server | `playerId`, `job`, `lastJob` |
 | `fn_bridge/server/jobCountChanged` | server | `jobName`, `count`, `previous` |

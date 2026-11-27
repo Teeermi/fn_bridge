@@ -96,6 +96,8 @@ Finish = function()
     for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'NOTIFY', 'PROGRESS', 'TARGET', 'HELPER', 'PICKER', 'KEYS', 'DEATH', 'VOICE', 'PREFS', 'CHARACTERS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end
+    FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetNeeds', 'needs')
+    FN_BRIDGE.Hookable(FN_BRIDGE.FRAMEWORK, 'GetGang', 'gang', function() return cache.serverId end)
 
     isReady = true
     CreateThread(function()

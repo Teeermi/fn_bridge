@@ -136,6 +136,7 @@ Finish = function()
     FN_BRIDGE.PREFS = FN_BRIDGE.UnavailableNamespace('PREFS', 'client side only', { 'Keys', 'Get', 'All', 'Set' })
     FN_BRIDGE.SOCIETY = Resolve('SOCIETY', FN_SOCIETY, FN_BRIDGE.SocietyContract, FN_BRIDGE.societyName or '_default')
 
+    FN_FRAMEWORK.GetItemList = FN_FRAMEWORK.GetItemList or function() return {} end
     for _, namespace in ipairs({ 'FRAMEWORK', 'INVENTORY', 'VEHICLES', 'NOTIFY', 'HELPER', 'KEYS', 'CHARACTERS', 'DISPATCH', 'PHONE', 'MEDIA', 'HTTP', 'DEATH', 'HOUSING', 'SOCIETY', 'VOICE', 'WEATHER', 'JAIL', 'BILLING', 'COINS', 'STAFF', 'DOORS', 'APPEARANCE', 'INTERACT' }) do
         FN_BRIDGE.Overridable(namespace, FN_BRIDGE[namespace])
     end

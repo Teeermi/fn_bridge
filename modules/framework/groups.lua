@@ -309,6 +309,10 @@ local function GangView(name, grade, label, gradeName, gradeLabel, boss)
 end
 
 if Esx then
+    MySQL.ready(function()
+        GlobalState:set('fn_bridge:esxGangs', EsxHidden() == true, true)
+    end)
+
     F.GetGang = function(playerId)
         if not EsxHidden() then return false end
 

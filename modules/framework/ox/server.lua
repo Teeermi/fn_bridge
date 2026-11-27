@@ -353,9 +353,11 @@ end
 FN_FRAMEWORK.GetNeeds = function(playerId)
     if not OxPlayer(playerId) then return {} end
 
+    local hunger, thirst = tonumber(Call(playerId, 'getStatus', 'hunger')), tonumber(Call(playerId, 'getStatus', 'thirst'))
+
     return {
-        hunger = Percent(Call(playerId, 'getStatus', 'hunger')),
-        thirst = Percent(Call(playerId, 'getStatus', 'thirst')),
+        hunger = Percent(hunger and 100 - hunger),
+        thirst = Percent(thirst and 100 - thirst),
         stress = Percent(Call(playerId, 'getStatus', 'stress')),
     }
 end
@@ -366,6 +368,7 @@ FN_FRAMEWORK.AddNeeds = function(playerId, needs)
     for name, value in pairs(needs) do
         value = tonumber(value)
         if value and value ~= 0 and (name == 'hunger' or name == 'thirst' or name == 'stress') then
+            if name ~= 'stress' then value = -value end
             Call(playerId, value > 0 and 'addStatus' or 'removeStatus', name, math.abs(value))
         end
     end

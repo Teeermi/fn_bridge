@@ -206,6 +206,13 @@ AddEventHandler('SaltyChat_RadioChannelChanged', function(channel, primary)
     if primary ~= false then TriggerEvent('fn_bridge:radioChannel', math.floor(tonumber(channel) or 0)) end
 end)
 
+local function VoiceChanged()
+    SetTimeout(0, function() TriggerEvent('fn_bridge/client/onVoiceChange', FN_VOICE.Get()) end)
+end
+
+AddStateBagChangeHandler('proximity', ('player:%d'):format(GetPlayerServerId(PlayerId())), VoiceChanged)
+AddEventHandler('SaltyChat_VoiceRangeChanged', VoiceChanged)
+
 AddEventHandler('pma-voice:setTalkingOnRadio', function(serverId, talking)
     TriggerEvent('fn_bridge:radioTalking', tonumber(serverId), talking == true)
 end)

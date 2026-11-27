@@ -96,12 +96,13 @@ end
 
 local Hooked = {}
 
-FN_BRIDGE.Hookable = function(target, name, key)
+FN_BRIDGE.Hookable = function(target, name, key, args)
     local adapter = target[name]
     local wrapper = function(...)
         local hook = FN_BRIDGE.Setting(key)
         if FN_BRIDGE.Callable(hook) then
-            local ok, value = pcall(hook, ...)
+            local ok, value
+            if args then ok, value = pcall(hook, args()) else ok, value = pcall(hook, ...) end
             if ok and value ~= nil then return value end
         end
 

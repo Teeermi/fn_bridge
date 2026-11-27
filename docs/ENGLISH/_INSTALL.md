@@ -252,7 +252,7 @@ end)
 | `chat` | server | `playerId, author, message, color` | Chat messages from scripts |
 | `garage` | server | a table, not a function | Garage columns, see `Config.Bridge` above |
 | `dirtyMoney` | server | a table, not a function | Black money item |
-| `gang` | server | `playerId`, returns a gang table | The player's gang (organisation) |
+| `gang` | both | `playerId` (on the client your own server id, so one function works on both sides), returns a gang table | The player's gang (organisation) |
 | `duty` | server | `playerId`, returns a boolean | On or off duty, for a job core that counts it |
 | `setDuty` | server | `playerId, on`, returns `true` when the change worked | Going on or off duty from a script, for a job core that counts it. Return `nil` for jobs your core doesn't track |
 | `multijob` | server | `{ list, set, add }` | Several jobs per character |
@@ -272,10 +272,11 @@ end)
 | `ban` | server | `fn(playerId, reason, details, duration)`, returns anything but `nil` or `false` once it has banned the player | Your ban script. `nil` or `false` hands the ban on to `fn_bridge:ban` |
 | `weather` | server | a function returning the weather name, or `{ weather, time }` | Your weather script. Return a GTA weather name (`RAIN`, `THUNDER`) or `clear`, `rain`, `storm`, `snow`, `fog`; `time` returns the hour 0 to 23 |
 | `phoneNumber` | server | `{ get, taken, set, check, relog }` | Changing a character's phone number in a phone that keeps its own numbers |
-| `fuel` | client | `vehicle`, returns 0 to 100 | Fuel level |
+| `fuel` | both | `vehicle`, returns 0 to 100 | Fuel level. On the server fn_bridge reads it for parking and garages, so return a number there too or `nil` to use the `fuel` state bag |
+| `needs` | client | nothing, returns `{ hunger, thirst, stress }` 0 to 100 | Hunger, thirst and stress for a needs script fn_bridge doesn't know. Put it in `fn_bridge_custom`, then every script and `onNeedsChange` use it. When your values change, run `TriggerEvent('fn_bridge/client/refreshNeeds')` on the client and fn_bridge sends the new values to every HUD |
 | `FRAMEWORK.AddMoney`, `INVENTORY.AddItem`, ... | both | same as in [API.md](API.md) | That one function, completely. Any function of any namespace, by its full name |
 
-A reader (`name`, `job`, `phone`, `gang`, `duty`) or `setDuty` that returns `nil` falls back to what fn_bridge finds on its own. A full name like `FRAMEWORK.AddMoney` doesn't fall back, it replaces the function, so a server whose core was rewritten can still run every FIVENUTS script without touching fn_bridge. Stopping `fn_bridge_custom` removes its hooks.
+A reader (`name`, `job`, `phone`, `gang`, `needs`, `duty`) or `setDuty` that returns `nil` falls back to what fn_bridge finds on its own. A full name like `FRAMEWORK.AddMoney` doesn't fall back, it replaces the function, so a server whose core was rewritten can still run every FIVENUTS script without touching fn_bridge. Stopping `fn_bridge_custom` removes its hooks.
 
 **One script needs something different?** The same keys work in that script's `Config.Bridge`, and they win over `fn_bridge_custom` for that script only. Client functions there only work from a config file the script also loads on the client (`shared_scripts` or `client_scripts`).
 

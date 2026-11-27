@@ -428,6 +428,16 @@ FN_FRAMEWORK.GetVehicleCatalog = function()
     return catalog
 end
 
+FN_FRAMEWORK.GetItemList = function()
+    local items = not IsQbx and FN_FRAMEWORK.obj and FN_FRAMEWORK.obj.Shared and FN_FRAMEWORK.obj.Shared.Items
+    local out = {}
+    for name, item in pairs(type(items) == 'table' and items or {}) do
+        if type(item) == 'table' then out[name] = item end
+    end
+
+    return out
+end
+
 local Features = {
     money = function() return true end,
     phoneNumber = function() return true end,
