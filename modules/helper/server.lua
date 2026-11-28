@@ -155,16 +155,58 @@ local function Evidence(playerId)
     return evidence
 end
 
+local function Strings(list)
+    local out = {}
+    if type(list) ~= 'table' then return out end
+    for _, value in ipairs(list) do
+        if type(value) == 'string' and value ~= '' and #value <= 128 and #out < 64 then out[#out + 1] = value end
+    end
+
+    return out
+end
+
+local function BanOffline(resource, target, reason, details, encoded, duration)
+    local license = type(target.license) == 'string' and target.license:match('^license:%x+$') or nil
+    local entry = { license = license, identifiers = Strings(target.identifiers), tokens = Strings(target.tokens), name = type(target.name) == 'string' and target.name:sub(1, 64) or nil }
+    if not license and #entry.identifiers + #entry.tokens == 0 then return false end
+
+    local route, result = 'offline', nil
+    local hook = FN_BRIDGE.Setting('banOffline', resource)
+    if FN_BRIDGE.Callable(hook) then
+        local ok, done = pcall(hook, entry, reason, details, duration)
+        if not ok then print('^1banOffline hook failed, using the next ban route: '..tostring(done)..'^7') end
+        if ok and done ~= nil and done ~= false then route, result = 'hook', done end
+    end
+
+    if route ~= 'hook' and FN_HELPER.BanRoute() == 'APIAC:banPlayer' then
+        local by = type(details.by) == 'string' and details.by ~= '' and details.by:sub(1, 64) or resource
+        local ok, id = pcall(function() return exports.APIAC:banIdentifiers(entry, reason, details, tonumber(duration), by) end)
+        if ok and id then route, result = 'APIAC:banIdentifiers', id else print('^1APIAC:banIdentifiers failed, the offline ban is only logged: '..tostring(id)..'^7') end
+    end
+
+    if route == 'offline' then print(('^3BanPlayer from %s: no ban route takes offline players, the ban is only logged^7'):format(resource)) end
+    FN_LOG.Write(resource, 'anticheat', 'player.ban', nil, { reason = reason, details = encoded, route = route, result = result ~= nil and tostring(result) or nil, duration = tonumber(duration), offline = true, identifiers = #entry.identifiers, tokens = #entry.tokens }, { license = license, name = entry.name })
+
+    if route == 'offline' then return false end
+
+    return route, result
+end
+
 FN_HELPER.BanPlayer = function(playerId, reason, details, duration)
     local resource = GetInvokingResource() or GetCurrentResourceName()
-    playerId = tonumber(playerId)
-    if not playerId or playerId <= 0 then return false end
+    local offline = type(playerId) == 'table' and playerId or nil
+    if not offline then
+        playerId = tonumber(playerId)
+        if not playerId or playerId <= 0 then return false end
+    end
 
     reason = type(reason) == 'string' and reason ~= '' and reason or 'banned by '..resource
     if details ~= nil and type(details) ~= 'table' then details = { info = tostring(details) } end
     details = details or {}
     local encodedOk, encoded = pcall(json.encode, details)
     encoded = encodedOk and encoded or tostring(details)
+
+    if offline then return BanOffline(resource, offline, reason, details, encoded, duration) end
 
     if not GetPlayerName(playerId) then
         print(('^3BanPlayer from %s: player %s is no longer on the server, the ban is only logged^7'):format(resource, playerId))

@@ -221,7 +221,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | --- | --- | --- |
 | `Supported` | none | boolean |
 | `Owner` | `playerId` | what characters are listed by: ESX identifier, license on QBCore and QBox, `nil` on ox_core |
-| `List` | `playerId`, `owner` (optional, ox_core userId) | array of `{ key, num, firstname, lastname, dob, sex, height, nationality, phone, cid, job, jobName, grade, cash, bank, dirty, position, seen, jail, down, inside, property, skin }` (`down` = downed or dead when the player logged out; fields the framework lacks are `nil`) |
+| `List` | `playerId`, `owner` (optional, ox_core userId) | array of `{ key, charId, num, firstname, lastname, dob, sex, height, nationality, phone, cid, job, jobName, grade, cash, bank, dirty, position, seen, jail, down, inside, property, skin }` (`down` = downed or dead when the player logged out; fields the framework lacks are `nil`) |
 | `DeferredLogin` | none | `true` on ox_core: log in only after the spawn, ox acts on login at once |
 | `TakeOver` | none | hands character select over to your script (ox_core `ox:characterSelect 0`) |
 | `HandsOver` | none | `false` when the framework still runs its own select (ESX `Config.Multichar` off, QBox `useExternalCharacters` off) |
@@ -229,6 +229,8 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `Login` | `playerId`, `key` | boolean, waits until the framework has the player loaded |
 | `Create` | `playerId`, `num`, `{ firstname, lastname, dob, dobText, sex, height, nationality }` | new `key`, or `nil` |
 | `Delete` | `playerId`, `key` | boolean |
+| `Find` | `charId` (the value from `fn_bridge:charid`) or `key` | `{ key, charId, owner, firstname, lastname }` of an online or offline character, or `nil`. `owner` is the license it is listed by |
+| `Hide` | `key`, `hidden` | boolean. Hides the character from the framework without deleting anything (ox_core sets `deleted`, the rest need nothing). It does not fire `fn_bridge:characterDeleted` |
 | `Logout` | `playerId` | boolean |
 | `IsLoaded` | `playerId` | boolean |
 | `StarterItems` | `playerId` | array of `{ item, amount, meta }` from the framework's starter list |
@@ -287,7 +289,7 @@ Character select and lifecycle, for multicharacter scripts. ESX (with esx_multic
 | `SetPlayerBucket` | `playerId`, `bucket` | nothing |
 | `GetIdentifiers` | `playerId` | map of identifier type to value |
 | `GetPlayer` | `playerId` | `{ id, name, identifiers }`, or `nil` |
-| `BanPlayer` | `playerId`, `reason`, `details`, `duration` | the route that handled it (`'hook'`, `'APIAC:banPlayer'`, your `'resource:export'` or `'drop'`), or `false` when the player isn't online. An offline ban is still logged with route `offline` |
+| `BanPlayer` | `playerId` (or `{ license, identifiers, tokens, name }` for an offline player), `reason`, `details`, `duration` | the route that handled it (`'hook'`, `'APIAC:banPlayer'`, your `'resource:export'` or `'drop'`), or `false` when the player isn't online. An offline ban is still logged with route `offline`. A table returns `'hook'` or `'APIAC:banIdentifiers'` with the ban id, or `false` when no route bans offline players |
 | `BanRoute` | none | the route `fn_bridge:ban` points to right now |
 | `IsAdmin` | `playerId` | `true` for the console, players in `fn_bridge:admins` (or `Config.Bridge.admins` of the calling script) and players with the `fn_bridge.admin` ACE |
 | `RegisterCommand` | `command`, `groups`, `callback`, `allowConsole`, `suggestions`, `deniedMessage` | nothing |
@@ -345,7 +347,7 @@ end, false, { help = 'Give a crate to a player', params = { { name = 'id', help 
 
 **GetNetIdFromEntity / GetEntityFromNetId** retry until the entity is networked (`timeout` in ms, default `1000`). They wait, so call them inside a thread. On the client, `GetNetIdFromEntity` will network a local entity.
 
-**BanPlayer** tries the `ban` hook, then `fn_bridge:ban` (a `resource:export` of yours, or APIAC when it runs), and kicks the player when nothing else can ban. Use the hook for an anticheat whose export takes other arguments. `details` is a table of evidence and `duration` is passed on to APIAC and to the hook. A hook or export that returns `false` counts as failed: the hook hands the ban on, the export ends in a kick. Each ban is logged to the `anticheat` channel with the reason, details, identifiers, position and your resource name. A player who already left is logged too, with route `offline` and the identity from when they dropped. See [_INSTALL.md](_INSTALL.md#logs-and-bans).
+**BanPlayer** tries the `ban` hook, then `fn_bridge:ban` (a `resource:export` of yours, or APIAC when it runs), and kicks the player when nothing else can ban. Use the hook for an anticheat whose export takes other arguments. `details` is a table of evidence and `duration` is passed on to APIAC and to the hook. A hook or export that returns `false` counts as failed: the hook hands the ban on, the export ends in a kick. Each ban is logged to the `anticheat` channel with the reason, details, identifiers, position and your resource name. A player who already left is logged too, with route `offline` and the identity from when they dropped. To ban someone who is offline, pass a table instead of the id: the license, identifiers and tokens you saved when they joined. That goes to the `banOffline` hook, then to APIAC `banIdentifiers`. `details.by` becomes the name of the person who banned. See [_INSTALL.md](_INSTALL.md#logs-and-bans).
 
 **SendLog** still takes a webhook URL of your own. It now uses the same queue as `FN_BRIDGE.LOG`, so it never blocks and it waits when Discord rate limits.
 
@@ -359,7 +361,7 @@ end, false, { help = 'Give a crate to a player', params = { { name = 'id', help 
 
 Resources that don't import fn_bridge use the export, which takes the same arguments: `exports.fn_bridge:Log(channel, event, playerId, data)`.
 
-- `channel` is `economy`, `jobs`, `casino`, `admin` or `anticheat`.
+- `channel` is `economy`, `jobs`, `casino`, `admin`, `anticheat`, `connections`, `deaths`, `inventory`, `vehicles`, `store`, `chat` or `leveling`. What each one is for is listed in [_INSTALL.md](_INSTALL.md#logs-and-bans).
 - `event` is a short name like `shop.buy`, up to 64 letters, digits, `_`, `-` and `.`.
 - `playerId` is a server id, or `nil` when no player is involved. fn_bridge adds the license, the character id, the character name and the name of your resource.
 - `data` is a flat table with up to 20 keys of up to 32 characters each. Values can be strings (cut at 256 bytes, never inside a UTF-8 character), numbers or booleans.
@@ -939,6 +941,18 @@ Premium coins from the server's coin shop, for scripts that sell something for c
 
 Without a provider the coins come from CoinStore (fn_itemshop) when it runs. Another coin shop plugs in from fn_bridge_custom with `FN_BRIDGE.Provide('coins', { Get = fn(playerId), Remove = fn(playerId, amount, reason), Add = fn(playerId, amount, reason) })`, where `Remove` returns `true` only when it took the coins. When `Name` is `false`, scripts treat coin prices as switched off. Errors: `'invalid'`, `'none'`, `'funds'`.
 
+### LEVELING (server)
+
+Character level and EXP, for scripts that reward players.
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Name` | none | `'fn_leveling'`, the providing resource, or `false` |
+| `Award` | `playerId`, `tier`, `reason` | EXP given (`0` when no leveling script runs or the daily limit is used up), or `false, error` |
+| `Get` | `playerId` | `{ level, exp, levelExp, nextExp, dailyGained, dailyLimit, pending, boost, cap, vip, now }`, or `nil` |
+
+`tier` is a name from the leveling script's config (fn_leveling has `small`, `medium`, `large`, `mission` and `heist`), so a script never sends an amount. `reason` is a short tag like `taxi:job_done`, made of `a-z 0-9 _ . :`. When fn_leveling runs, the call goes there along with the name of the calling resource. Another leveling script plugs in with `FN_BRIDGE.Provide('leveling', { Award = fn(playerId, tier, reason, resource), Get = fn(playerId) })`, or with a single function, which then only answers `Award`. Errors: `'no_character'`, `'bad_args'`.
+
 ### STAFF (server)
 
 | Function | Args | Returns |
@@ -947,6 +961,17 @@ Without a provider the coins come from CoinStore (fn_itemshop) when it runs. Ano
 | `Call` | `jobName`, `exportName`, `...` | what that export returned, or `nil` without a host |
 
 A product registers with `FN_BRIDGE.Provide('staff', function(jobName) return true end)` for the jobs it runs. When two answer `true`, fn_mdt wins. Without a host, fn_phone keeps its own Work and Service apps.
+
+Server staff tools (bans and the admin menu) use these:
+
+| Function | Args | Returns |
+| --- | --- | --- |
+| `Unban` | a ban id like `'APIAC-AB12'`, or `{ identifiers, tokens }`, then `by` | `true, ids`, or `false, 'not_found'`, `'unavailable'` or `'bad_args'` |
+| `Bans` | `identifiers`, `tokens` | the active ban `{ id, name, reason, bannedBy, date, expiresAt }`, `false` when there is none, `nil` when nothing can tell |
+| `Inventory` | the character `key` | the items of an offline character, the same shape as `GetInventory`, or `nil` when the inventory can't be read offline |
+| `Exempt` | `playerId`, `true`, `false` or seconds | boolean. Turns anticheat checks off for that player while an admin teleports or spectates them |
+
+`Unban`, `Bans` and `Exempt` ask the `unban`, `bans` and `exempt` hooks first, then APIAC. `Inventory` reads the database: ESX, QBCore, Qbox and ox_core with their own inventory, ox_inventory, qb-inventory, ps-inventory and fn_inventory. A timed `Exempt` does nothing while a permanent one is on, so the end of a teleport can't cut a spectate short.
 
 ### MEDIA (server)
 
@@ -1010,9 +1035,11 @@ An outfit is the same everywhere, so it survives a change of clothing script:
 | `Restore` | server | `playerId` | boolean |
 | `FromCode` | server | `code` | outfit from an illenium-appearance outfit code, or `false` |
 | `Apply` | client | `ped`, `data` | boolean. Dresses any ped (a preview, a cast) from saved illenium-appearance, fivem-appearance, qb-clothing or skinchanger data |
-| `Creator` | client | `sex` (`'m'` or `'f'`) | `true` when the `appearance` hook opened a creator |
+| `Creator` | client | `sex` (`'m'` or `'f'`) | `true` once the player saved the look in the creator of the `appearance` hook or fn_appearance, `false` when there is none |
+| `LoadSkin` | server | `identifier` | `{ model, skin }` from `playerskins` (QBCore, Qbox) or `users.skin` (ESX). When those have no look (vRP, ox_core, standalone), it asks fn_appearance (`fn_appearance_skins`). `false` when nothing is found |
+| `SaveSkin` | server | `identifier`, `model`, `skin` (table or JSON) | boolean. Writes the look back to `playerskins` or `users.skin`, so multicharacter previews keep working |
 
-`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn(), apply = fn(ped, data), creator = fn(sex) }` (`creator` returns once the player saved the look), on the server `{ skin = fn(identifier) }` returning `{ model, skin }` for `CHARACTERS.List`.
+`Set` is for uniforms and gang clothes: it dresses the ped with game natives (the head stays) and does not touch the look the clothing script saved. `Restore` asks fn_appearance, illenium-appearance, fivem-appearance, qb-clothing or esx_skin for that saved look. `Get` on the server asks the player's client. Hook `appearance` on the client = `{ set = fn(outfit), restore = fn(), apply = fn(ped, data), creator = fn(sex) }` (`creator` returns once the player saved the look), on the server `{ skin = fn(identifier) }` returning `{ model, skin }` for `CHARACTERS.List`.
 
 ### DEATH (server)
 
@@ -1086,11 +1113,12 @@ All namespaces exist on both sides. One with nothing behind it (like `TARGET` on
 | `fn_bridge/server/playerLoaded` | server | `playerId`, player object |
 | `fn_bridge/server/onJobChange` | server | `playerId`, `job`, `lastJob` |
 | `fn_bridge/server/jobCountChanged` | server | `jobName`, `count`, `previous` |
-| `fn_bridge/server/onMoneyChange` | server | `playerId`, `account`, `delta`, `reason` (ESX, QBCore, QBox) |
+| `fn_bridge/server/onMoneyChange` | server | `playerId`, `account`, `delta`, `reason`, `operation`, `balance` (ESX, QBCore, QBox) |
 | `fn_bridge:characterLogout` | server | `playerId`, when the player left their character without leaving the server |
 
 - `onJobChange` fires on any job or grade change, with the same `job` table shape on every framework. `lastJob` is `nil` on the first change of a session.
 - `jobCountChanged` fires when a job's online count changes. A job switch fires it twice: once for the old job, once for the new one.
+- `onMoneyChange` has `operation` set to `add`, `remove` or `set`. A `set` replaces the balance, sends `delta` 0 and the new balance in `balance`. Add and remove leave `balance` empty.
 - `isDead` fires when `GlobalState.fn_isDead` changes.
 - `deathChanged` follows `DEATH.GetState()`, checked every 500 ms.
 - `notified` fires on the player's client for every `NOTIFY.Notify` (client or server side) and every framework `Notify`, before it is shown. `resource` is the script that sent it, or `nil` when unknown. A notification history can listen here and skip its own resource.

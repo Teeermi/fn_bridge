@@ -1,7 +1,8 @@
 FN_APPEARANCE = {}
 
 local A = FN_APPEARANCE
-local Resources = { 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }
+local Script = 'fn_appearance'
+local Resources = { Script, 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }
 local Props = { 0, 1, 2, 6, 7 }
 
 local function Hook(name)
@@ -88,7 +89,10 @@ A.Restore = function()
     end
 
     local name = A.Name()
-    if name == 'illenium-appearance' then
+    if name == Script then
+        local ok, done = pcall(function() return exports[Script]:Restore() end)
+        return ok and done == true
+    elseif name == 'illenium-appearance' then
         TriggerEvent('illenium-appearance:client:reloadSkin', true)
     elseif name == 'qb-clothing' then
         TriggerServerEvent('qb-clothes:loadPlayerSkin')
@@ -283,18 +287,29 @@ A.Apply = function(ped, data)
     local hook = Hook('apply')
     if hook and pcall(hook, ped, data) then return true end
 
-    local apply = Appliers[Kind(data)]
+    local kind = Kind(data)
+    if kind == 'illenium' and GetResourceState(Script) == 'started' then
+        local ok, done = pcall(function() return exports[Script]:Apply(ped, data) end)
+        if ok and done ~= nil then return done == true end
+    end
+
+    local apply = Appliers[kind]
 
     return apply ~= nil and pcall(apply, ped, data) == true
 end
 
 A.Creator = function(sex)
     local hook = Hook('creator')
-    if not hook then return false end
+    if hook then
+        local ok, done = pcall(hook, sex)
 
-    local ok, done = pcall(hook, sex)
+        return ok and done ~= false
+    end
+    if GetResourceState(Script) ~= 'started' then return false end
 
-    return ok and done ~= false
+    local ok, done = pcall(function() return exports[Script]:Creator(sex) end)
+
+    return ok and done == true
 end
 
 lib.callback.register('fn_bridge:appearance:get', function()

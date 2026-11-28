@@ -105,10 +105,15 @@ end
 
 AddEventHandler('QBCore:Server:OnMoneyChange', function(playerId, accountName, amount, operation, reason)
     amount = tonumber(amount)
-    if not tonumber(playerId) or not amount or amount == 0 then return end
-    if operation ~= 'add' and operation ~= 'remove' then return end
+    if not tonumber(playerId) or not amount then return end
+    reason = type(reason) == 'string' and reason or ''
 
-    TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), accountName, operation == 'add' and amount or -amount, type(reason) == 'string' and reason or '')
+    if operation == 'set' then
+        return TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), accountName, 0, reason, 'set', amount)
+    end
+    if amount == 0 or (operation ~= 'add' and operation ~= 'remove') then return end
+
+    TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), accountName, operation == 'add' and amount or -amount, reason, operation)
 end)
 
 local function Group(group)

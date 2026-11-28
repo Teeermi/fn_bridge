@@ -347,7 +347,7 @@ local function Logging()
     print(('^5BAN^7 route: %s'):format(hook and ('ban hook, falls back to ' .. fallback) or fallback))
 
     local channels = {}
-    for _, channel in ipairs({ 'economy', 'jobs', 'casino', 'admin', 'anticheat' }) do
+    for _, channel in ipairs(FN_LOG.ChannelOrder) do
         local state = FN_LOG.Webhook(channel) and 'on' or GetConvar('fn_bridge:webhook_' .. channel, '') ~= '' and 'not an http(s) URL' or 'off'
         channels[#channels + 1] = ('%s %s'):format(channel, state)
     end

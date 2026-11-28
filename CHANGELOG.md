@@ -1,5 +1,30 @@
 # fn_bridge changelog
 
+## 1.7.2 (2026-11-28)
+
+Added
+- HELPER.BanPlayer can ban a player who is offline. Pass { license, identifiers, tokens, name } in place of the player id. The new banOffline hook takes these bans, and without it fn_bridge uses APIAC.
+- Admin menus get four staff functions: STAFF.Unban, STAFF.Bans, STAFF.Inventory and STAFF.Exempt. Inventory reads the items of an offline character, and Exempt pauses anticheat checks for a player while an admin teleports or spectates them. Each one asks its own hook first, then APIAC.
+- CHARACTERS.Find looks up an online or offline character by key or by the id set in fn_bridge:charid. CHARACTERS.List also returns that id as charId.
+- CHARACTERS.Hide hides a character from the framework without deleting any data, so it can be restored later.
+- APPEARANCE.LoadSkin and APPEARANCE.SaveSkin on the server read and write the saved look in playerskins or users.skin. Where the framework keeps no look, LoadSkin asks fn_appearance.
+
+Changed
+- APPEARANCE.Restore asks fn_appearance first when it runs.
+- APPEARANCE.Creator also works with fn_appearance, and returns true only after the player saves the look.
+
+## 1.7.1 (2026-11-27)
+
+Added
+- Seven new log channels: connections, deaths, inventory, vehicles, store, chat and leveling. Each has its own webhook convar, set fn_bridge:webhook_<channel>. With the convar empty, entries still go to fn_logs.
+- LEVELING module on the server. LEVELING.Award(playerId, tier, reason) and LEVELING.Get(playerId) forward to fn_leveling when it runs, or to a leveling provider hook. Without either, Award returns 0 and Get returns nil, so a script can give EXP without depending on fn_leveling.
+
+Changed
+- fnb_selftest now shows the webhook state of all twelve log channels.
+
+Fixed
+- fn_bridge/server/onMoneyChange now fires when QBCore, Qbox or ESX set a balance outright, as an admin setmoney does. Until now only add and remove came through, so scripts that follow cash missed these changes. The event gets two more arguments: operation (add, remove or set) and, for a set, the new balance. A set sends delta 0.
+
 ## 1.7.0 (2026-11-27)
 
 Added

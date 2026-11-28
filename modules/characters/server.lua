@@ -2,7 +2,7 @@ if not FN_FRAMEWORK then return end
 
 FN_CHARACTERS = {}
 
-local MAX = 10
+local MAX = 40
 
 local function decode(v)
     if type(v) == 'table' then return v end
@@ -91,6 +91,32 @@ local function esxTables()
     return esxColumns
 end
 
+local function esxKeys(id)
+    local keys = {}
+    for n = 1, MAX do keys[n] = ('char%d:%s'):format(n, id) end
+    return keys
+end
+
+local function charExpr(default)
+    local src = FN_CHARID and FN_CHARID.Source()
+    return src and src.value or ('`%s`'):format(default)
+end
+
+local function findRow(sql, key, id)
+    local r = MySQL.single.await(sql:format(('`%s`'):format(key)), { id })
+    if r then return r end
+    local expr = charExpr(key)
+    if expr == ('`%s`'):format(key) then return nil end
+    return MySQL.single.await(sql:format(expr), { id })
+end
+
+local function qbFind(id)
+    local r = findRow('SELECT citizenid, license, charinfo FROM players WHERE %s = ? LIMIT 1', 'citizenid', id)
+    if not r then return nil end
+    local ci = decode(r.charinfo) or {}
+    return { key = r.citizenid, owner = r.license, firstname = ci.firstname, lastname = ci.lastname }
+end
+
 local function qbChar(r)
     local ci = decode(r.charinfo) or {}
     local job = decode(r.job) or {}
@@ -121,8 +147,19 @@ local function qbChar(r)
     }
 end
 
+local tables
+local function has(t)
+    if not tables then
+        tables = {}
+        for _, r in ipairs(MySQL.query.await('SELECT TABLE_NAME AS t FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()') or {}) do
+            tables[r.t] = true
+        end
+    end
+    return tables[t] == true
+end
+
 local function qbSkins(list)
-    if #list == 0 then return end
+    if #list == 0 or not has('playerskins') then return end
     local keys, by = {}, {}
     for _, c in ipairs(list) do
         keys[#keys + 1] = c.key
@@ -212,16 +249,6 @@ local function qbxStarter(src)
     return out
 end
 
-local tables
-local function has(t)
-    if not tables then
-        tables = {}
-        for _, r in ipairs(MySQL.query.await('SELECT TABLE_NAME AS t FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()') or {}) do
-            tables[r.t] = true
-        end
-    end
-    return tables[t] == true
-end
 
 local function cars(rows, model, stored)
     local out = {}
@@ -276,8 +303,7 @@ IMPL.esx = {
     list = function(src)
         local id = esx().GetIdentifier(src)
         if not id then return {} end
-        local keys = {}
-        for n = 1, MAX do keys[n] = ('char%d:%s'):format(n, id) end
+        local keys = esxKeys(id)
         local rows = MySQL.query.await(([[SELECT u.identifier, u.firstname, u.lastname, u.dateofbirth, u.sex, u.height, u.accounts,
             u.position, u.skin, u.job AS job_name, j.label AS job_label, g.label AS grade_label]] .. (column('users', 'is_dead') and ', u.is_dead' or '') .. [[ FROM users u
             LEFT JOIN jobs j ON j.name = u.job LEFT JOIN job_grades g ON g.job_name = u.job AND g.grade = u.job_grade
@@ -314,6 +340,22 @@ IMPL.esx = {
         return waitFor(function() return FN_FRAMEWORK.RawPlayer(src) ~= nil end, 15000)
     end,
     create = function(src, num, d)
+        local id = esx().GetIdentifier(src)
+        if not id then return nil end
+        local keys, used = esxKeys(id), {}
+        for _, r in ipairs(MySQL.query.await(('SELECT identifier FROM users WHERE identifier IN (%s)'):format(marks(#keys)), keys) or {}) do
+            used[tonumber(r.identifier:match('^char(%d+):'))] = true
+        end
+        if used[num] then
+            num = nil
+            for n = 1, MAX do
+                if not used[n] then
+                    num = n
+                    break
+                end
+            end
+            if not num then return nil end
+        end
         TriggerEvent('esx:onPlayerJoined', src, 'char' .. num, {
             firstname = d.firstname,
             lastname = d.lastname,
@@ -330,6 +372,12 @@ IMPL.esx = {
             q[#q + 1] = { query = ('DELETE FROM `%s` WHERE `%s` = ?'):format(r.t, r.c), values = { key } }
         end
         return #q > 0 and MySQL.transaction.await(q) == true
+    end,
+    find = function(id)
+        local r = findRow('SELECT identifier, firstname, lastname FROM users WHERE %s = ? LIMIT 1', 'identifier', id)
+        if not r then return nil end
+        local hex = r.identifier:match('^char%d+:(.+)$')
+        return { key = r.identifier, owner = hex and ('license:' .. hex) or nil, firstname = r.firstname, lastname = r.lastname }
     end,
     logout = function(src)
         local p = promise.new()
@@ -393,6 +441,7 @@ IMPL.qb = {
         qb().Player.DeleteCharacter(src, key)
         return true
     end,
+    find = qbFind,
     logout = function(src)
         qb().Player.Logout(src)
         return true
@@ -428,6 +477,7 @@ IMPL.qbx = {
         exports.qbx_core:DeleteCharacter(key)
         return true
     end,
+    find = qbFind,
     logout = function(src)
         exports.qbx_core:Logout(src)
         return true
@@ -511,7 +561,7 @@ IMPL.ox = {
                 down = r.isDead == true or (tonumber(r.isDead) or 0) > 0 or nil,
             }
         end
-        if has('playerskins') then qbSkins(out) end
+        qbSkins(out)
         return out
     end,
     login = function(src, key)
@@ -529,6 +579,20 @@ IMPL.ox = {
     end,
     delete = function(src, key)
         return exports.ox_core:CallPlayer(src, 'deleteCharacter', tonumber(key)) == true
+    end,
+    find = function(id)
+        local n = math.tointeger(tonumber(id))
+        if not n then return nil end
+        local r = MySQL.single.await([[SELECT c.charId, c.firstName, c.lastName, u.license2 FROM characters c
+            JOIN users u ON u.userId = c.userId WHERE c.charId = ? LIMIT 1]], { n })
+        if not r then return nil end
+        return { key = tostring(r.charId), owner = r.license2, firstname = r.firstName, lastname = r.lastName }
+    end,
+    hide = function(key, hidden)
+        local n = math.tointeger(tonumber(key))
+        if not n then return false end
+        MySQL.update.await('UPDATE characters SET deleted = IF(?, CURDATE(), NULL) WHERE charId = ?', { hidden == true, n })
+        return true
     end,
     logout = function(src)
         exports.ox_core:CallPlayer(src, 'logout')
@@ -555,8 +619,24 @@ end
 
 FN_CHARACTERS.Supported = function() return IMPL[FN_BRIDGE.frameworkName or ''] ~= nil end
 FN_CHARACTERS.Owner = function(src) return call('license', src) end
+local function charIds(list)
+    local src = FN_CHARID and FN_CHARID.Source()
+    if src and #list > 0 then
+        local keys, by = {}, {}
+        for i, c in ipairs(list) do
+            keys[i], by[c.key] = c.key, c
+        end
+        local ok, rows = pcall(MySQL.query.await, ('SELECT `%s` AS k, %s AS v FROM %s WHERE `%s` IN (%s)'):format(src.key, src.value, src.table, src.key, marks(#keys)), keys)
+        for _, r in ipairs(ok and rows or {}) do
+            if by[r.k] then by[r.k].charId = r.v end
+        end
+    end
+    for _, c in ipairs(list) do c.charId = c.charId or c.key end
+end
+
 FN_CHARACTERS.List = function(src, owner)
     local list = call('list', src, owner) or {}
+    charIds(list)
     local hook = FN_BRIDGE.Setting('appearance')
     local skin = type(hook) == 'table' and hook.skin
     if not FN_BRIDGE.Callable(skin) then return list end
@@ -589,6 +669,21 @@ FN_CHARACTERS.Delete = function(src, key)
     local done = call('delete', src, key) == true
     if done then FN_CHARACTERS.Deleted(key, src) end
     return done
+end
+FN_CHARACTERS.Find = function(id)
+    if type(id) == 'number' and id == id and id ~= math.huge and id ~= -math.huge then id = math.tointeger(id) and tostring(math.tointeger(id)) end
+    if type(id) ~= 'string' or id == '' or #id > 64 then return nil end
+    local r = call('find', id)
+    if type(r) ~= 'table' or not r.key then return nil end
+    r.charId = FN_CHARID and FN_CHARID.Source() and FN_FRAMEWORK.GetCharId(r.key) or r.key
+    return r
+end
+FN_CHARACTERS.Hide = function(key, hidden)
+    if type(key) ~= 'string' or key == '' then return false end
+    local i = IMPL[FN_BRIDGE.frameworkName or '']
+    if not i then return false end
+    if not i.hide then return true end
+    return call('hide', key, hidden) == true
 end
 FN_CHARACTERS.Logout = function(src) return call('logout', src) == true end
 FN_CHARACTERS.IsLoaded = function(src) return call('loaded', src) == true end

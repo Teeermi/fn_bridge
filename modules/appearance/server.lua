@@ -2,7 +2,9 @@ FN_APPEARANCE = {}
 
 local A = FN_APPEARANCE
 
-for _, resource in ipairs({ 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }) do FN_KNOWN[resource] = 'appearance' end
+local Resources = { 'fn_appearance', 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }
+
+for _, resource in ipairs(Resources) do FN_KNOWN[resource] = 'appearance' end
 
 local function Online(playerId)
     playerId = tonumber(playerId)
@@ -28,7 +30,7 @@ local function Clean(outfit)
 end
 
 A.Name = function()
-    for _, resource in ipairs({ 'illenium-appearance', 'fivem-appearance', 'qb-clothing', 'skinchanger' }) do
+    for _, resource in ipairs(Resources) do
         if GetResourceState(resource) == 'started' then return resource end
     end
 
@@ -77,4 +79,64 @@ A.FromCode = function(code)
     end
 
     return Clean(outfit)
+end
+
+local function SkinIdentifier(identifier)
+    identifier = identifier ~= nil and tostring(identifier) or nil
+
+    return identifier and identifier ~= '' and #identifier <= 64 and identifier or nil
+end
+
+local function FrameworkSkin(identifier)
+    if FN_BRIDGE.FRAMEWORK.GetFrameworkName() == 'esx' then
+        if not FN_DB.HasColumn('users', 'skin') then return false end
+        local row = MySQL.single.await('SELECT skin FROM users WHERE identifier = ? LIMIT 1', { identifier })
+        local skin = row and FN_DB.Json(row.skin)
+        if not skin or next(skin) == nil then return false end
+
+        return { model = skin.model or (skin.sex == 1 and 'mp_f_freemode_01' or 'mp_m_freemode_01'), skin = skin }
+    end
+
+    if not FN_DB.HasTable('playerskins') then return false end
+    local row = MySQL.single.await('SELECT model, skin FROM playerskins WHERE citizenid = ? ORDER BY active DESC LIMIT 1', { identifier })
+    local skin = row and FN_DB.Json(row.skin)
+    if not skin or next(skin) == nil then return false end
+
+    return { model = row.model, skin = skin }
+end
+
+local function AppearanceSkin(identifier)
+    if GetResourceState('fn_appearance') ~= 'started' then return false end
+    local ok, found = pcall(function() return exports.fn_appearance:LoadSkin(identifier) end)
+    if not ok or type(found) ~= 'table' or type(found.model) ~= 'string' or type(found.skin) ~= 'table' then return false end
+
+    return { model = found.model, skin = found.skin }
+end
+
+A.LoadSkin = function(identifier)
+    identifier = SkinIdentifier(identifier)
+    if not identifier then return false end
+
+    return FrameworkSkin(identifier) or AppearanceSkin(identifier)
+end
+
+A.SaveSkin = function(identifier, model, skin)
+    identifier = SkinIdentifier(identifier)
+    if not identifier or type(model) ~= 'string' or #model > 32 then return false end
+    if type(skin) == 'table' then skin = json.encode(skin) end
+    if type(skin) ~= 'string' then return false end
+
+    if FN_BRIDGE.FRAMEWORK.GetFrameworkName() == 'esx' then
+        if not FN_DB.HasColumn('users', 'skin') then return false end
+
+        return (MySQL.update.await('UPDATE users SET skin = ? WHERE identifier = ?', { skin, identifier }) or 0) > 0
+    end
+
+    if not FN_DB.HasTable('playerskins') then return false end
+
+    return MySQL.transaction.await({
+        { query = 'UPDATE playerskins SET active = 0 WHERE citizenid = ?', values = { identifier } },
+        { query = 'DELETE FROM playerskins WHERE citizenid = ? AND model = ?', values = { identifier, model } },
+        { query = 'INSERT INTO playerskins (citizenid, model, skin, active) VALUES (?, ?, ?, 1)', values = { identifier, model, skin } },
+    }) == true
 end

@@ -9,12 +9,18 @@ FN_LOG = {
     PaceMs = 1000,
 }
 
-local Channels = { economy = 3066993, jobs = 3447003, casino = 15844367, admin = 10181046, anticheat = 15158332 }
+local Channels = {
+    economy = 3066993, jobs = 3447003, casino = 15844367, admin = 10181046, anticheat = 15158332, connections = 1752220,
+    deaths = 10038562, inventory = 15105570, vehicles = 2123412, store = 15277667, chat = 9807270, leveling = 5793266,
+}
+local ChannelOrder = { 'economy', 'jobs', 'casino', 'admin', 'anticheat', 'connections', 'deaths', 'inventory', 'vehicles', 'store', 'chat', 'leveling' }
+local ChannelHint = 'channel must be one of ' .. table.concat(ChannelOrder, ', ')
 local Warned, Queues, Gone = {}, {}, {}
 local TableReady, TableMissing, Flushing, CheckAt, Backoff, Failed = false, false, false, 0, FN_LOG.FlushMs, nil
 local Lost = { 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'ENOTFOUND', 'EHOSTUNREACH', 'PROTOCOL_CONNECTION_LOST', 'PROTOCOL_SEQUENCE_TIMEOUT', 'closed state', 'Connection lost', 'Too many connections', 'ER_CON_COUNT_ERROR', 'ER_SERVER_SHUTDOWN', 'server has gone away', 'Lost connection' }
 
 FN_LOG.Channels = Channels
+FN_LOG.ChannelOrder = ChannelOrder
 FN_LOG.Rows = {}
 
 local function Warn(key, message)
@@ -73,7 +79,7 @@ end
 
 FN_LOG.Clean = function(resource, channel, event, playerId, data)
     resource = type(resource) == 'string' and resource or 'unknown'
-    if type(channel) ~= 'string' or not Channels[channel] then return Reject(resource, 'channel must be economy, jobs, casino, admin or anticheat') end
+    if type(channel) ~= 'string' or not Channels[channel] then return Reject(resource, ChannelHint) end
     if type(event) ~= 'string' or #event > 64 or not event:match('^[%w_%-]+[%w_%.%-]*$') then return Reject(resource, 'event must be a short name like shop.buy') end
     if playerId ~= nil and (type(playerId) ~= 'number' or playerId < 0 or playerId % 1 ~= 0) then return Reject(resource, 'playerId must be a server id or nil') end
     if data ~= nil and type(data) ~= 'table' then return Reject(resource, 'data must be a table or nil') end

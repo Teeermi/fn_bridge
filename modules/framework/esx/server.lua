@@ -604,12 +604,18 @@ local function MoneyChanged(sign)
         amount = tonumber(amount)
         if not tonumber(playerId) or not amount or amount == 0 then return end
 
-        TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), ReverseAccounts[accountName] or accountName, sign * amount, type(reason) == 'string' and reason or '')
+        TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), ReverseAccounts[accountName] or accountName, sign * amount, type(reason) == 'string' and reason or '', sign > 0 and 'add' or 'remove')
     end
 end
 
 AddEventHandler('esx:addAccountMoney', MoneyChanged(1))
 AddEventHandler('esx:removeAccountMoney', MoneyChanged(-1))
+AddEventHandler('esx:setAccountMoney', function(playerId, accountName, money, reason)
+    money = tonumber(money)
+    if not tonumber(playerId) or not money then return end
+
+    TriggerEvent('fn_bridge/server/onMoneyChange', tonumber(playerId), ReverseAccounts[accountName] or accountName, 0, type(reason) == 'string' and reason or '', 'set', money)
+end)
 
 FN_FRAMEWORK.GetJob = function(playerId)
     local xPlayer = XPlayer(playerId)

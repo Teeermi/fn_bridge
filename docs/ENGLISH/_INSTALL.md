@@ -123,7 +123,24 @@ Use `set`, never `setr`: `setr` sends the value to every player. A token in a sc
 
 ### Logs and bans
 
-Scripts send their logs through fn_bridge to five channels: `economy`, `jobs`, `casino`, `admin` and `anticheat`. Give each channel its own Discord webhook in `server.cfg`:
+Scripts send their logs through fn_bridge to twelve channels:
+
+| Channel | What goes there |
+| --- | --- |
+| `economy` | money moving between players, shops and accounts |
+| `jobs` | finished and cancelled job orders, payouts |
+| `casino` | stakes, results and session totals |
+| `admin` | admin actions |
+| `anticheat` | bans, honeypot hits and rejected suspicious requests |
+| `connections` | joins and drops, with identifiers |
+| `deaths` | kills and downed players |
+| `inventory` | item transfers, drops and stashes |
+| `vehicles` | vehicle purchases, transfers and impounds |
+| `store` | the premium store: coins and deliveries |
+| `chat` | chat messages and roleplay commands |
+| `leveling` | experience and level changes |
+
+Give each channel its own Discord webhook in `server.cfg`, and leave out the ones you don't want on Discord:
 
 ```cfg
 set fn_bridge:webhook_economy "https://discord.com/api/webhooks/..."
@@ -131,9 +148,16 @@ set fn_bridge:webhook_jobs ""
 set fn_bridge:webhook_casino ""
 set fn_bridge:webhook_admin ""
 set fn_bridge:webhook_anticheat "https://discord.com/api/webhooks/..."
+set fn_bridge:webhook_connections ""
+set fn_bridge:webhook_deaths ""
+set fn_bridge:webhook_inventory ""
+set fn_bridge:webhook_vehicles ""
+set fn_bridge:webhook_store ""
+set fn_bridge:webhook_chat ""
+set fn_bridge:webhook_leveling ""
 ```
 
-Use `set` for these, never `setr` or `sets`. `setr` sends the URL to every player and `sets` shows it in the server list, and anyone who has the URL can post in your channel. A channel with an empty or missing convar sends nothing to Discord. Webhooks in a script's own `config/server.lua` keep working as before.
+Use `set` for these, never `setr` or `sets`. `setr` sends the URL to every player and `sets` shows it in the server list, and anyone who has the URL can post in your channel. A channel with an empty or missing convar sends nothing to Discord, but its logs still go to `fn_logs`. Webhooks in a script's own `config/server.lua` keep working as before.
 
 Every log also becomes a row in the `fn_logs` table. Import `sql/install.sql` from fn_bridge into your database once; fn_bridge never creates tables while the server runs. Until the table exists, fn_bridge prints one warning, keeps the rows in memory and checks again with longer and longer pauses, so importing the file later is enough. `set fn_bridge:logs_db "false"` stops the database writes. A webhook value that isn't an `http://` or `https://` URL turns that channel's Discord messages off with one warning. Discord messages go out in the background, about one a second per webhook, and fn_bridge waits as long as Discord asks when it hits a rate limit. Database rows are written every 5 seconds in batches of up to 100. If the database connection drops, the rows wait in memory and fn_bridge tries again. oxmysql doesn't always report a refused connection, so a query with no answer after 15 seconds is treated the same way. A batch the database refuses twice for any other reason is dropped with one warning. Game code never waits on either.
 
@@ -163,6 +187,16 @@ end)
 ```
 
 Return anything but `nil` or `false` once the player is banned. Returning `nil` or `false`, or an error inside the hook, hands the ban on to the next route. A `fn_bridge:ban` export that returns `false` or errors gets the player kicked.
+
+Bans of offline players (an admin bans by SSN or license) go to a separate `banOffline` hook. It gets `{ license, identifiers, tokens, name }` in place of the player id. Without it, fn_bridge uses APIAC when it runs, and otherwise only logs the ban:
+
+```lua
+exports.fn_bridge:Provide('banOffline', function(entry, reason, details, duration)
+    return exports['my_anticheat']:BanIdentifiers(entry.license, entry.identifiers, reason, duration or 0)
+end)
+```
+
+Lifting and reading bans go through the `unban` hook (a ban id or `{ identifiers, tokens }`, then who lifted it) and the `bans` hook (`identifiers, tokens`, returns the ban or `false`). The `exempt` hook gets `playerId` and `true`, `false` or seconds, and turns anticheat checks off while an admin menu moves that player. Return `nil` from any of them to hand the call on to APIAC.
 
 ### Per script: `Config.Bridge`
 

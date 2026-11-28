@@ -101,7 +101,7 @@ set fn_bridge:webhook_anticheat "https://discord.com/api/webhooks/..."
 
 | Convar | Default | What it sets |
 | --- | --- | --- |
-| `fn_bridge:webhook_economy`, `_jobs`, `_casino`, `_admin`, `_anticheat` | empty | Discord webhook for that log channel, empty turns the channel off. A value that isn't an http(s) URL is ignored with one warning |
+| `fn_bridge:webhook_economy`, `_jobs`, `_casino`, `_admin`, `_anticheat`, `_connections`, `_deaths`, `_inventory`, `_vehicles`, `_store`, `_chat`, `_leveling` | empty | Discord webhook for that log channel. Empty keeps the channel off Discord, its logs still go to `fn_logs`. A value that isn't an http(s) URL is ignored with one warning |
 | `fn_bridge:logs_db` | `true` | `false` stops writing logs to the `fn_logs` table. Import `sql/install.sql` first |
 | `fn_bridge:ban` | `auto` | who bans for `BanPlayer`: `auto` uses APIAC when it runs, `resource:export` calls an export that takes `playerId, reason, details`, `drop` only kicks. Any other anticheat goes through the `ban` hook |
 
